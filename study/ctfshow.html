@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ctfshow-web知识</title>
     <link rel="stylesheet" href="ctfshow/style.css">
+    <style>
+        /* 为代码容器添加滚动条样式 */
+        .code-container {
+            max-width: 100%;
+            overflow-x: auto;
+            white-space: pre;
+        }
+    </style>
     <script src="../animations.js" defer></script>    
 </head>
 <body>
@@ -15,7 +23,9 @@
 </ul>
 </nav>
     <!-- 页面内容 -->
-    <div id="markdown-content"></div>
+    <div class="code-container">
+        <div id="markdown-content"></div>
+    </div>
     <!-- 引入 marked.js 库 -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
