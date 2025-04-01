@@ -75,7 +75,7 @@ system()、passthru()、exec()、shell_exec()、popen()、proc_open()、pcntl_ex
 '\"绕过ls匹配:l''s    l""s    l\s
 ```
 
-![3093559a-9a03-4827-bdc6-af55efe43ba4](file:///C:/Users/%E8%B5%B5%E5%AD%90%E5%8F%91/Pictures/Typedown/3093559a-9a03-4827-bdc6-af55efe43ba4.png)
+![3093559a](5.png)
 
 ```
 cat和tac的区别是顺序输出和逆序输出：
@@ -530,7 +530,7 @@ echo ${PWD:~A}    //字母代表0
 f
 ```
 
-<img src="file:///C:/Users/%E8%B5%B5%E5%AD%90%E5%8F%91/Pictures/Typedown/cb06378b-4ae9-40fa-8ab5-710d2868dec3.png" title="" alt="cb06378b-4ae9-40fa-8ab5-710d2868dec3" style="zoom:50%;">
+<img src="./6.png" title="" alt="cb06378b-4ae9-40fa-8ab5-710d2868dec3" style="zoom:50%;">
 
 # 文件包含
 
