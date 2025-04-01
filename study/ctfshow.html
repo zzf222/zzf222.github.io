@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ctfshow-web知识</title>
+    <link rel="stylesheet" href="ctfshow/style.css">
+    <script src="../animations.js" defer></script>    
+</head>
+<body>
+    <canvas id="petalCanvas"></canvas>
+    <nav>
+        <ul>
+    <li><a href="index.html">返回知识页面</a></li>
+</ul>
+</nav>
+    <!-- 页面内容 -->
+    <div id="markdown-content"></div>
+    <!-- 引入 marked.js 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // 使用 fetch API 获取 Markdown 文件内容
+        fetch('./ctfshow/ctfshow-web.md')
+           .then(response => response.text())
+           .then(text => {
+                // 使用 marked 解析 Markdown 文本并插入到页面中
+                document.getElementById('markdown-content').innerHTML = marked.parse(text);
+            });
+    </script>
+    <script src="../animations.js"></script>
+</body>
+</html>

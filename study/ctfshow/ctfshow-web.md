@@ -45,7 +45,7 @@ eval($_POST[1]); post传值1=echo`ls`;会返回所有内容。1=echo exec(dir);�
 *以当前路径下第一个文件名作为命令执行
 ```
 
-<img title="" src="./1.png" alt="b2028d9c-cd0e-4035-a9b2-19001f61b8cf" data-align="inline" style="zoom:100%;"><img title="" src="./2.png" alt="2966fbbd-d4ad-416c-9798-ece66726dee7" data-align="inline" style="zoom:80%;">
+<img title="" src="./1.png" alt="tac s.txt" data-align="inline" style="zoom:100%;"><img title="" src="./2.png" alt="ls后出现nl和s.txt,执行*后显示了s.txt的内容" data-align="inline" style="zoom:80%;">
 
 ```
 flag in config.php
@@ -75,7 +75,7 @@ system()、passthru()、exec()、shell_exec()、popen()、proc_open()、pcntl_ex
 '\"绕过ls匹配:l''s    l""s    l\s
 ```
 
-![3093559a](5.png)
+![ls和l''s和l""s和l\s的作用都一样](5.png)
 
 ```
 cat和tac的区别是顺序输出和逆序输出：
@@ -530,7 +530,7 @@ echo ${PWD:~A}    //字母代表0
 f
 ```
 
-<img src="./6.png" title="" alt="cb06378b-4ae9-40fa-8ab5-710d2868dec3" style="zoom:50%;">
+<img src="./6.png" title="" alt="pwd后出现/home/zzf" style="zoom:50%;">
 
 # 文件包含
 
@@ -878,7 +878,7 @@ if(isset($_GET['c'])){$c=$_GET['c'];check($c);exec($c);}
 
 ##### 同时查看和保存一个命令的输出：ls | tee 1
 
-<img title="" src="./3.png" alt="e747d1e9-e85d-4bf2-a17a-361b147546be" data-align="inline" style="zoom:100%;"><img title="" src="./4.png" alt="341f703f-b571-4dc3-bf86-658c5b32589b" data-align="inline" style="zoom:100%;">
+<img title="" src="./3.png" alt="ls后输出nl和s.txt,执行ls | tee 1得到nl和s.txt" data-align="inline" style="zoom:100%;"><img title="" src="./4.png" alt="ls后得到1和nl和s.txt,执行tac 1得到s.txt和nl" data-align="inline" style="zoom:100%;">
 
 ##### 调用类的静态方法：
 
@@ -974,7 +974,7 @@ echo"第二次反转:".iconv("UCS-2LE","UCS-2BE",$result);?>
 
 对于输入字符串中的每个字母，将其ASCII值加上13或减去13
 
-<img title="" src="https://img-blog.csdnimg.cn/direct/7ea65077062441ccad18ff9e72e72eaa.png" alt="7ea65077062441ccad18ff9e72e72eaa" style="zoom:50%;">
+<img title="" src="https://img-blog.csdnimg.cn/direct/7ea65077062441ccad18ff9e72e72eaa.png" alt="rot13的转换" style="zoom:50%;">
 
 # 文件上传
 
