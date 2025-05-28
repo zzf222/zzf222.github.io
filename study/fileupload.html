@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件上传闯关指南</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2em 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+
+        nav {
+            background-color: #34495e;
+            color: white;
+        }
+
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav ul li {
+            padding: 1em;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 2em auto;
+            padding: 0 1em;
+        }
+
+        section {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2em;
+            padding: 2em;
+        }
+
+        h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5em;
+            margin-bottom: 1em;
+        }
+
+        pre {
+            background-color: #ecf0f1;
+            padding: 1em;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>文件上传闯关指南</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="index.html">返回学习页面</a></li>
+            <li><a href="#file-upload">文件上传</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section id="file-upload">
+            <h2>文件上传闯关详解</h2>
+
+            <article>
+                <h3>第一关：前端绕过</h3>
+                <p>第一关是前端绕过，会在前端校验上传的文件后缀名是否为jpg、png等图片。第一种方法是直接修改前端代码，发现提交表单后会return checkFile()，可以直接把提交时触发的这个方法删掉，因为就是这个方法会判断。或者直接重写checkFile()方法即function checkFile(){}。第二种方法抓包绕过，先把木马文件后缀名改为jpg格式等照片文件然后把流量转发到burp上然后修改回php后缀名。</p>
+            </article>
+
+            <article>
+                <h3>第二关：mime即文件类型判断</h3>
+                <p>抓包后把content-type改为image/jpeg</p>
+            </article>
+
+            <article>
+                <h3>第三关：生僻扩展名绕过</h3>
+                <p>只是把基本的木马后缀名加入了黑名单，但是后端对于一些生僻扩展名仍然支持解析。即上传带有一句话木马php3、php4、phtml等后缀名文件。</p>
+            </article>
+
+            <article>
+                <h3>第四关：上传.htaccess文件绕过</h3>
+                <p>.htaccess是 Apache 服务器的分布式配置文件，用于在目录级别修改服务器行为</p>
+                <pre><code>
+.htaccess写法一:创建相同后缀名的一句话木马,作用就是会让这个后缀名变成php代码执行
+AddType application/x-http-php .后缀名
+.htaccess写法二:# FileMatch 会把xxxx当做php文件执行
+&lt;FilesMatch &quot;xxxx&quot;&gt;
+  SetHandler application/x-httpd-php
+&lt;/FilesMatch&gt;
+                </code></pre>
+            </article>
+
+            <article>
+                <h3>第五关：上传.user.ini文件上传绕过</h3>
+                <p>.user.ini是 PHP 的用户自定义配置文件。在.user.ini中写auto_prepend_file=test.jpg，之后上传.user.ini和test.jpg，在加载php文件都会先加载test.jpg文件执行。所以test.jpg写入一句话木马，然后访问同级目录的php文件就执行了木马。</p>
+            </article>
+
+            <article>
+                <h3>第六关：大小写绕过</h3>
+                <p>即只是校验了很多木马文件的后缀名，可以使用大小写绕过即上传包含一句话木马的Php文件</p>
+            </article>
+
+            <article>
+                <h3>第七关：末尾空格绕过</h3>
+                <p>在文件名后加空格，因为windows操作系统会自动删除空格，但是php空格不在黑名单中，于是就绕过了。抓包把文件后缀名修改为php空格即可</p>
+            </article>
+
+            <article>
+                <h3>第八关：末尾加点绕过</h3>
+                <p>理论同上，抓包把文件后缀名修改为php点即可</p>
+            </article>
+
+            <article>
+                <h3>第九关：::$DATA绕过</h3>
+                <p>在文件名后加::$DATA，因为windows操作系统会自动删除::$DATA，但是php::$DATA不在黑名单中，于是就绕过了。抓包把文件后缀名修改为php::$DATA，然后访问该php即可。</p>
+            </article>
+
+            <article>
+                <h3>第十关：末尾加. .绕过</h3>
+                <p>因为源码会先删除点再去除空格，然后留下的就是php点，因为php点不在黑名单中就上传成功了。访问即可。</p>
+            </article>
+
+            <article>
+                <h3>第十四关：使用文件包含图片马</h3>
+                <p>后端会检验文件头，可以在含有一句话木马文件的第一行加上GIF89a或者自己用图片和木马合成一张图再上传，然后使用文件包含木马的图片成功解析。</p>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 网络安全知识分享</p>
+    </footer>
+</body>
+
+</html>
