@@ -133,6 +133,8 @@
     <p>使用heapdump利用工具得到敏感数据如账号密码等</p>
 
     <h2>Fastjson相关</h2>
+    <p>Fastjson 高版本 (>=1.2.25)： 引入了 autoType 黑名单机制，并逐步加强（白名单、safemode），默认关闭 autoType，使得直接利用 @type 指定危险类（如 JdbcRowSetImpl）变得极其困难。</p>
+    <p>JDK 高版本 (>=8u121, 7u131, 6u141, 11.0.1)：限制了通过 RMI/LDAP 进行远程类加载，使得传统的 JdbcRowSetImpl + JNDI/RMI/LDAP 攻击链失效。</p>
     <p>序列化固定类，parse会调用set方法,parseObject会调用set和get方法</p>
     <p>反序列化指定类，parseObject会调用set方法</p>
     <p>fastjson需要利用jndi注入进行rce,需要关注fastjson的版本和jdk的版本</p>
