@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APP攻防知识分享</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 30px;
+        }
+
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>APP攻防知识分享</h1>
+    <a href="index.html">返回知识页面</a>
+    <h2>雷电模拟器（v9.1）安装系统证书</h2>
+    <p>在burp工具的网页上下载用户级证书cacert.der</p>
+    <ol>
+        <li>开启root权限</li>
+        <li>开启磁盘可写入</li>
+    </ol>
+    <pre><code>openssl x509 -inform DER -in cacert.der -out cacert.pem                //转换格式
+openssl x509 -inform PEM -subject_hash_old -in cacert.pem          //计算哈希
+mv cacert.pem 9a5ba575.0</code></pre>
+    <p>在电脑上连接雷电模拟器：</p>
+    <pre><code>adb.exe root
+adb.exe devices
+adb.exe push 9a5ba575.0 /sdcard/               
+adb.exe shell
+mount -o rw,remount /
+mount -o rw,remount /system
+chmod 777 /system
+mount -o remount -o rw /
+cp /sdcard/9a5ba575.0 /system/etc/security/cacerts/
+chmod 644 /system/etc/security/cacerts/9a5ba575.0
+reboot</code></pre>
+
+    <h2>抓包问题解决</h2>
+    <h3>无检测抓不到包</h3>
+    <p>没有配置工具证书(用户/系统证书)，没有设置代理，app走的不是http/s，用封包工具或者科来系统抓。</p>
+    <h3>有检测抓不到包</h3>
+    <ol>
+        <li>
+            <p>单向证书检测：使用Xposed框架(支持安卓<=8.1,最好用LSP,不更新兼容安卓高版本了)JustTrustMe和JustMePlush模块解决。使用Lsp和JustMePlush模块解决。</p>
+        </li>
+        <li>
+            <p>代理检测：</p>
+            <ul>
+                <li>使用Postern的app代理到burp解决</li>
+                <li>在电脑上使用proxifier抓模拟器的包再代理到burp上</li>
+                <li>都抓不了包就只有试试逆向删除代码重打包</li>
+            </ul>
+        </li>
+        <li>
+            <p>模拟器检测：</p>
+            <ul>
+                <li>用真机</li>
+                <li>模拟器模拟真机</li>
+                <li>逆向删代码重打包。</li>
+            </ul>
+        </li>
+    </ol>
+</body>
+
+</html>
