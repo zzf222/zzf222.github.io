@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker知识分享</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 30px;
+        }
+
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Docker 常用命令速查</h1>
+<a href="index.html">返回知识页面</a>
+    <h2>容器生命周期</h2>
+    <pre><code class="bash">
+# 运行容器（端口映射+后台运行）
+docker run -d -p 主机端口:容器端口 --name 容器名 镜像名
+
+# 启动/停止/重启容器
+docker start 容器名
+docker stop 容器名
+docker restart 容器名
+
+# 删除容器
+docker rm 容器名         # 删除停止的容器
+docker rm -f 容器名      # 强制删除运行中的容器
+    </code></pre>
+    <h2>镜像管理</h2>
+    <pre><code class="bash">
+# 拉取镜像
+docker pull 镜像名:标签
+
+# 列出镜像
+docker images
+
+# 删除镜像
+docker rmi 镜像名
+
+# 构建镜像（需 Dockerfile）
+docker build -t 镜像名:标签 .
+    </code></pre>
+    <h2>容器监控</h2>
+    <pre><code class="bash">
+# 查看运行中的容器
+docker ps
+
+# 查看所有容器（含停止的）
+docker ps -a
+
+# 查看容器日志
+docker logs 容器名
+docker logs -f 容器名   # 实时跟踪日志
+
+# 进入容器终端
+docker exec -it 容器名 /bin/bash
+    </code></pre>
+    <h2>Docker Compose 常用命令</h2>
+    <p>Docker Compose 用于管理多容器应用（通过 docker-compose.yml 配置）</p>
+    <h3>基础命令</h3>
+    <pre><code class="bash">
+# 启动所有服务（后台运行）
+docker-compose up -d
+
+# 停止并删除所有容器
+docker-compose down
+
+# 查看运行状态
+docker-compose ps
+
+# 查看服务日志
+docker-compose logs -f 服务名
+    </code></pre>
+    <h3>服务管理</h3>
+    <pre><code class="bash">
+# 启动/停止/重启单个服务
+docker-compose start 服务名
+docker-compose stop 服务名
+docker-compose restart 服务名
+
+# 重建并启动单个服务
+docker-compose up -d --build 服务名
+    </code></pre>
+    <h3>实用操作</h3>
+    <pre><code class="bash">
+# 在服务中执行命令
+docker-compose exec 服务名 bash
+
+# 查看服务资源使用
+docker-compose top
+    </code></pre>
+    <h2>示例 docker-compose.yml 文件</h2>
+    <pre><code class="yaml">
+version: '3'
+services:
+  web:  # 服务名称
+    image: nginx:alpine
+    ports:
+      - "8080:80"  # 端口映射
+    volumes:
+      - ./html:/usr/share/nginx/html  # 目录挂载
+
+  db:   # 第二个服务
+    image: postgres:13
+    environment:
+      POSTGRES_PASSWORD: mysecretpassword
+    </code></pre>
+    <h2>使用方式</h2>
+    <ol>
+        <li>保存为 docker-compose.yml</li>
+        <li>运行 docker-compose up -d</li>
+        <li>访问 http://localhost:8080</li>
+    </ol>
+    <p>这个配置会同时启动 Nginx 和 PostgreSQL 两个容器，并建立端口映射和数据卷挂载。</p>
+    <h2>关键区别总结</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>场景</th>
+                <th>Docker 命令</th>
+                <th>Docker Compose</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>单容器操作</td>
+                <td>✅ 最佳</td>
+                <td>⚠️ 可用但不常用</td>
+            </tr>
+            <tr>
+                <td>多容器应用</td>
+                <td>❌ 需手动管理</td>
+                <td>✅ 一键部署</td>
+            </tr>
+            <tr>
+                <td>复杂网络配置</td>
+                <td>❌ 繁琐</td>
+                <td>✅ 声明式配置</td>
+            </tr>
+            <tr>
+                <td>生产环境部署</td>
+                <td>❌</td>
+                <td>✅ 推荐</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+
+</html>
